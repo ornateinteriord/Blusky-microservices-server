@@ -148,28 +148,39 @@ const createAccount = async (req, res) => {
         // Example: For member 10512 with PIGMY (AGP005), account_no could be 105600001
         // The pattern seems to be: first 3 digits of member_id + group sequence number + running number
 
-        // Find the last account for this account type to determine next account number
-        const lastAccountByType = await AccountsModel.findOne({
-            account_type: account_type
+        // Professional Account Number Generation
+        // Format: [PREFIX][YEAR][SEQUENCE]
+        // Example: SB202400001, RD202400001
+        
+        const groupName = accountGroup.account_group_name?.toUpperCase() || "";
+        let typePrefix = "ACC";
+        if (groupName.includes("SAVING")) typePrefix = "SB";
+        else if (groupName.includes("CURRENT")) typePrefix = "CA";
+        else if (groupName.includes("RECURRING")) typePrefix = "RD";
+        else if (groupName.includes("FIXED")) typePrefix = "FD";
+        else if (groupName.includes("PIGMY")) typePrefix = "PG";
+        else if (groupName.includes("MONTHLY")) typePrefix = "MI";
+        else if (groupName.includes("DAILY")) typePrefix = "PG";
+
+        const currentYear = new Date().getFullYear().toString();
+        
+        // Find the last account with this prefix and year to determine next sequence
+        const lastAccountWithPrefix = await AccountsModel.findOne({
+            account_no: { $regex: new RegExp(`^${typePrefix}${currentYear}`) }
         }).sort({ account_no: -1 }).limit(1);
 
         let newAccountNo;
-        if (lastAccountByType && lastAccountByType.account_no) {
-            // Increment the last account number
-            const lastAccountNo = parseInt(lastAccountByType.account_no);
-            if (!isNaN(lastAccountNo)) {
-                newAccountNo = lastAccountNo + 1;
+        if (lastAccountWithPrefix && lastAccountWithPrefix.account_no) {
+            // Extract the sequence part (everything after prefix and year)
+            const sequencePart = lastAccountWithPrefix.account_no.substring(typePrefix.length + currentYear.length);
+            const lastSeq = parseInt(sequencePart);
+            if (!isNaN(lastSeq)) {
+                newAccountNo = `${typePrefix}${currentYear}${(lastSeq + 1).toString().padStart(5, '0')}`;
             } else {
-                // If parsing fails, create new one based on member_id
-                const memberIdPrefix = member_id.toString().substring(0, 3);
-                const groupSuffix = "60"; // This could be derived from account_group_id if needed
-                newAccountNo = parseInt(`${memberIdPrefix}${groupSuffix}0001`);
+                newAccountNo = `${typePrefix}${currentYear}00001`;
             }
         } else {
-            // First account for this type
-            const memberIdPrefix = member_id.toString().substring(0, 3);
-            const groupSuffix = "60"; // This could be customized based on account type
-            newAccountNo = parseInt(`${memberIdPrefix}${groupSuffix}0001`);
+            newAccountNo = `${typePrefix}${currentYear}00001`;
         }
 
         // Create new account

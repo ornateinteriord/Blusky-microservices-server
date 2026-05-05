@@ -10,7 +10,7 @@ const interestSchema = new mongoose.Schema(
 
     plan_type: {
       type: String,
-      enum: ["FD", "RD", "PIGMY", "SAVING", "PIGMY SAVING", "PIGMY LOAN", "PIGMY GOLD LOAN"],
+      enum: ["FD", "RD", "PIGMY", "SAVING", "CURRENT", "PIGMY SAVING", "PIGMY LOAN", "PIGMY GOLD LOAN"],
       required: true,
     },
     interest_type: {

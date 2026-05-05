@@ -80,10 +80,12 @@ const createMember = async (req, res) => {
         // Prepare member data
         const memberData = {
             member_id: newMemberId,
+            Member_id: newMemberId, // Set both for compatibility
             branch_id,
             date_of_joining,
             receipt_no,
             name,
+            Name: name, // Set both for compatibility
             father_name,
             gender,
             dob,
@@ -238,11 +240,13 @@ const updateMember = async (req, res) => {
 
         // Build query conditions
         const queryConditions = [
-            { member_id: memberId },  // As string
+            { member_id: memberId },
+            { Member_id: memberId },
         ];
 
         if (isValidNumber) {
             queryConditions.push({ member_id: memberIdAsNumber });
+            queryConditions.push({ Member_id: memberIdAsNumber });
         }
 
         // Use $or to query for member_id as string, number, or any format
@@ -306,11 +310,13 @@ const getMemberById = async (req, res) => {
 
         // Build query conditions
         const queryConditions = [
-            { member_id: memberId },  // As string
+            { member_id: memberId },
+            { Member_id: memberId },
         ];
 
         if (isValidNumber) {
             queryConditions.push({ member_id: memberIdAsNumber });
+            queryConditions.push({ Member_id: memberIdAsNumber });
         }
 
         // Use $or to query for member_id
@@ -350,6 +356,7 @@ const setIntroducerHierarchy = async (req, res) => {
         const member = await MemberModel.findOne({
             $or: [
                 { member_id: memberId },
+            { Member_id: memberId },
                 { member_id: parseInt(memberId) }
             ]
         });

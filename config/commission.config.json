@@ -1,0 +1,148 @@
+{
+    "enabled": true,
+    "minimumTransactionAmount": 0,
+    "description": "Configuration for both Interest Rates (for account maturity) and 7-Level Commission (for referral)",
+    "seniorCitizenAgeThreshold": 60,
+    "depositInterestRates": {
+        "description": "Interest rates for deposit accounts - used for maturity calculation based on tenure",
+        "FD": {
+            "1_YEAR": {
+                "general": 9.00,
+                "seniorCitizen": 9.50
+            },
+            "2_YEAR": {
+                "general": 9.50,
+                "seniorCitizen": 10.00
+            },
+            "3_YEAR": {
+                "general": 10.00,
+                "seniorCitizen": 10.50
+            },
+            "4_YEAR": {
+                "general": 11.00,
+                "seniorCitizen": 11.50
+            },
+            "5_YEAR": {
+                "general": 13.00,
+                "seniorCitizen": 13.00
+            }
+        },
+        "RD": {
+            "1_YEAR": {
+                "general": 6.00,
+                "seniorCitizen": 6.50
+            },
+            "2_YEAR": {
+                "general": 7.00,
+                "seniorCitizen": 7.50
+            },
+            "3_YEAR": {
+                "general": 9.00,
+                "seniorCitizen": 9.50
+            },
+            "4_YEAR": {
+                "general": 10.00,
+                "seniorCitizen": 10.50
+            },
+            "5_YEAR": {
+                "general": 12.00,
+                "seniorCitizen": 12.50
+            }
+        },
+        "Pigmy": {
+            "1_YEAR": {
+                "general": 5.00,
+                "seniorCitizen": 5.50
+            },
+            "2_YEAR": {
+                "general": 6.00,
+                "seniorCitizen": 6.50
+            },
+            "3_YEAR": {
+                "general": 10.00,
+                "seniorCitizen": 10.50
+            }
+        },
+        "SB": {
+            "ON_DEMAND": {
+                "general": 4.00,
+                "seniorCitizen": 4.50
+            }
+        }
+    },
+    "commissionLevels": {
+        "description": "7-Level referral commission - same rate for everyone (no senior citizen differentiation)",
+        "levels": [
+            {
+                "level": 1,
+                "FD": 4.50,
+                "RD": 4.50,
+                "Pigmy": 4.50,
+                "SB": 4.50,
+                "CUR": 0.00
+            },
+            {
+                "level": 2,
+                "FD": 1.00,
+                "RD": 1.00,
+                "Pigmy": 1.00,
+                "SB": 1.00,
+                "CUR": 0.00
+            },
+            {
+                "level": 3,
+                "FD": 0.50,
+                "RD": 0.50,
+                "Pigmy": 0.50,
+                "SB": 0.50,
+                "CUR": 0.00
+            },
+            {
+                "level": 4,
+                "FD": 0.25,
+                "RD": 0.25,
+                "Pigmy": 0.25,
+                "SB": 0.25,
+                "CUR": 0.00
+            },
+            {
+                "level": 5,
+                "FD": 0.25,
+                "RD": 0.25,
+                "Pigmy": 0.25,
+                "SB": 0.25,
+                "CUR": 0.00
+            },
+            {
+                "level": 6,
+                "FD": 0.25,
+                "RD": 0.25,
+                "Pigmy": 0.25,
+                "SB": 0.25,
+                "CUR": 0.00
+            },
+            {
+                "level": 7,
+                "FD": 0.25,
+                "RD": 0.25,
+                "Pigmy": 0.25,
+                "SB": 0.25,
+                "CUR": 0.00
+            }
+        ]
+    },
+    "accountTypeMapping": {
+        "AGP001": "SB",
+        "AGP003": "RD",
+        "AGP004": "FD",
+        "AGP005": "Pigmy",
+        "AGP006": "CUR"
+    },
+    "eligibleAccountTypes": [
+        "AGP001",
+        "AGP003",
+        "AGP004",
+        "AGP005",
+        "AGP006"
+    ]
+}

@@ -5,7 +5,7 @@ const getTransactionDetails = async (req, res) => {
   try {
     const loggedInMemberId = req.user.memberId;
     const userRole = req.user.role;
-    const { status } = req.query;
+    const { status, type } = req.query;
 
     let query = {};
     
@@ -17,6 +17,10 @@ const getTransactionDetails = async (req, res) => {
 
     if (status && status !== "all") {
       query.status = status;
+    }
+
+    if (type && type !== "all") {
+      query.account_type = type;
     }
 
     const transactions = await TransactionModel.aggregate([

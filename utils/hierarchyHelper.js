@@ -8,15 +8,26 @@ const AgentModel = require("../models/agent.model");
  */
 const addMemberHierarchy = async (memberData) => {
     try {
-        if (!memberData.introducer) {
-            console.log("No introducer specified for member");
+        // Fallback for introducer using sponsor fields if introducer is null
+        const introducerId = memberData.introducer || memberData.sponsor_id || memberData.Sponsor_code;
+        
+        if (!introducerId) {
+            console.log("No introducer or sponsor specified for member");
             memberData.introducer_hierarchy = [];
             return memberData;
         }
 
+        // Use the identified introducer ID
+        memberData.introducer = introducerId;
+
         // Determine introducer type (could be member or agent)
         let introducerType = "MEMBER";
-        let introducer = await MemberModel.findOne({ member_id: memberData.introducer });
+        let introducer = await MemberModel.findOne({ 
+            $or: [
+                { member_id: memberData.introducer },
+                { Member_id: memberData.introducer }
+            ]
+        });
 
         if (!introducer) {
             // Check if it's an agent
@@ -31,7 +42,7 @@ const addMemberHierarchy = async (memberData) => {
         }
 
         // Build hierarchy
-        const hierarchy = await buildIntroducerHierarchy(memberData.introducer, introducerType);
+        const hierarchy = await buildIntroducerHierarchy(introducerId, introducerType);
         memberData.introducer_hierarchy = hierarchy;
 
         // Set introducer_name if not already set
@@ -67,7 +78,12 @@ const addAgentHierarchy = async (agentData) => {
 
         if (!introducer) {
             // Could also be a member in some cases
-            introducer = await MemberModel.findOne({ member_id: agentData.introducer });
+            introducer = await MemberModel.findOne({ 
+                $or: [
+                    { member_id: agentData.introducer },
+                    { Member_id: agentData.introducer }
+                ]
+            });
             introducerType = "MEMBER";
         }
 

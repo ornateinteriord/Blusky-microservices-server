@@ -128,9 +128,14 @@ const updateMyProfile = async (req, res) => {
         delete updateData.createdAt;
         delete updateData.updatedAt;
 
-        // Find and update the member
+        // Find and update the member (Checking both lowercase and uppercase fields)
         const updatedMember = await MemberModel.findOneAndUpdate(
-            { member_id: memberId },
+            { 
+                $or: [
+                    { member_id: memberId },
+                    { Member_id: memberId }
+                ]
+            },
             { $set: updateData },
             { new: true, runValidators: true }
         );
@@ -162,8 +167,12 @@ const getMemberBasicInfo = async (req, res) => {
     try {
         const { memberId } = req.params;
 
-        const allMembers = await MemberModel.find({});
-        const member = allMembers.find(m => m.member_id === memberId);
+        const member = await MemberModel.findOne({
+            $or: [
+                { member_id: memberId },
+                { Member_id: memberId }
+            ]
+        });
 
         if (!member) {
             return res.status(404).json({
@@ -205,8 +214,12 @@ const getMemberAccountsPublic = async (req, res) => {
         const { memberId } = req.params;
 
         // Verify member exists and is active
-        const allMembers = await MemberModel.find({});
-        const member = allMembers.find(m => m.member_id === memberId);
+        const member = await MemberModel.findOne({
+            $or: [
+                { member_id: memberId },
+                { Member_id: memberId }
+            ]
+        });
 
         if (!member) {
             return res.status(404).json({
@@ -255,8 +268,9 @@ const getMemberAccountsPublic = async (req, res) => {
                     account_no: 1,
                     account_type: 1,
                     account_group_name: "$groupInfo.account_group_name",
-                    date_of_opening: 1
-                    // Explicitly NOT including account_amount for privacy
+                    date_of_opening: 1,
+                    account_amount: 1,
+                    status: 1
                 }
             },
             {
@@ -347,17 +361,62 @@ const getMemberInterestsByAccountGroup = async (req, res) => {
         const { account_group_id } = req.params;
         const InterestModel = require("../../models/interest.model");
 
-        if (!account_group_id) {
-            return res.status(400).json({
+        const AccountGroupModel = require("../../models/accountGroup.model");
+        const accountGroup = await AccountGroupModel.findOne({
+            account_group_id: account_group_id
+        });
+
+        if (!accountGroup) {
+            return res.status(404).json({
                 success: false,
-                message: "Account group ID is required"
+                message: "Account group not found"
             });
         }
 
+        const planTypeMapping = {
+            "FIXED DEPOSIT": "FD",
+            "FD": "FD",
+            "RECURRING DEPOSIT": "RD",
+            "RD": "RD",
+            "PIGMY": "PIGMY",
+            "PIGMY DEPOSIT": "PIGMY",
+            "SAVING": "SAVING",
+            "SAVINGS": "SAVING",
+            "SAVINGS BANK": "SAVING",
+            "SB": "SAVING",
+            "CURRENT": "CURRENT",
+            "CURRENT ACCOUNT": "CURRENT",
+            "CA": "CURRENT",
+            "PIGMY SAVING": "PIGMY SAVING",
+            "PIGMY LOAN": "PIGMY LOAN",
+            "PIGMY GOLD LOAN": "PIGMY GOLD LOAN"
+        };
+
+        const groupNameUpper = accountGroup.account_group_name?.toUpperCase() || "";
+        let planType = planTypeMapping[groupNameUpper];
+        
+        console.log(`[MemberInterests] Group: ${groupNameUpper}, Mapped PlanType: ${planType}`);
+
+        // If no direct mapping, try partial matches
+        if (!planType) {
+            if (groupNameUpper.includes("FIXED")) planType = "FD";
+            else if (groupNameUpper.includes("RECURRING")) planType = "RD";
+            else if (groupNameUpper.includes("SAVING")) planType = "SAVING";
+            else if (groupNameUpper.includes("CURRENT")) planType = "CURRENT";
+            else if (groupNameUpper.includes("PIGMY")) planType = "PIGMY";
+            else planType = groupNameUpper;
+            console.log(`[MemberInterests] Fallback PlanType: ${planType}`);
+        }
+
         const interests = await InterestModel.find({
-            ref_id: account_group_id,
-            status: "active"
+            $or: [
+                { plan_type: planType },
+                { ref_id: account_group_id } // Also support direct ID matching
+            ],
+            status: { $regex: /^active$/i }
         }).sort({ createdAt: -1 });
+
+        console.log(`[MemberInterests] Found ${interests.length} interests for ${planType}`);
 
         res.status(200).json({
             success: true,
@@ -448,25 +507,39 @@ const createMemberAccount = async (req, res) => {
             }
         }
 
-        // Auto-increment account_no based on member_id and account_type
-        const lastAccountByType = await AccountsModel.findOne({
-            account_type: account_type
+        // Professional Account Number Generation
+        // Format: [PREFIX][YEAR][SEQUENCE]
+        // Example: SB202400001, RD202400001
+        
+        const groupName = accountGroup.account_group_name?.toUpperCase() || "";
+        let typePrefix = "ACC";
+        if (groupName.includes("SAVING")) typePrefix = "SB";
+        else if (groupName.includes("CURRENT")) typePrefix = "CA";
+        else if (groupName.includes("RECURRING")) typePrefix = "RD";
+        else if (groupName.includes("FIXED")) typePrefix = "FD";
+        else if (groupName.includes("PIGMY")) typePrefix = "PG";
+        else if (groupName.includes("MONTHLY")) typePrefix = "MI";
+        else if (groupName.includes("DAILY")) typePrefix = "PG";
+
+        const currentYear = new Date().getFullYear().toString();
+        
+        // Find the last account with this prefix and year to determine next sequence
+        const lastAccountWithPrefix = await AccountsModel.findOne({
+            account_no: { $regex: new RegExp(`^${typePrefix}${currentYear}`) }
         }).sort({ account_no: -1 }).limit(1);
 
         let newAccountNo;
-        if (lastAccountByType && lastAccountByType.account_no) {
-            const lastAccountNo = parseInt(lastAccountByType.account_no);
-            if (!isNaN(lastAccountNo)) {
-                newAccountNo = lastAccountNo + 1;
+        if (lastAccountWithPrefix && lastAccountWithPrefix.account_no) {
+            // Extract the sequence part (everything after prefix and year)
+            const sequencePart = lastAccountWithPrefix.account_no.substring(typePrefix.length + currentYear.length);
+            const lastSeq = parseInt(sequencePart);
+            if (!isNaN(lastSeq)) {
+                newAccountNo = `${typePrefix}${currentYear}${(lastSeq + 1).toString().padStart(5, '0')}`;
             } else {
-                const memberIdPrefix = memberId.toString().substring(0, 3);
-                const groupSuffix = "60";
-                newAccountNo = parseInt(`${memberIdPrefix}${groupSuffix}0001`);
+                newAccountNo = `${typePrefix}${currentYear}00001`;
             }
         } else {
-            const memberIdPrefix = memberId.toString().substring(0, 3);
-            const groupSuffix = "60";
-            newAccountNo = parseInt(`${memberIdPrefix}${groupSuffix}0001`);
+            newAccountNo = `${typePrefix}${currentYear}00001`;
         }
 
         // Create new account

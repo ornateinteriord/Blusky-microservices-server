@@ -34,7 +34,12 @@ const getIntroducerHierarchy = async (userId, userType) => {
     try {
         let user;
         if (userType === "MEMBER") {
-            user = await MemberModel.findOne({ member_id: userId });
+            user = await MemberModel.findOne({ 
+                $or: [
+                    { member_id: userId },
+                    { Member_id: userId }
+                ]
+            });
         } else if (userType === "AGENT") {
             user = await AgentModel.findOne({ agent_id: userId });
         }
@@ -59,7 +64,12 @@ const buildIntroducerHierarchy = async (introducerId, introducerType) => {
 
         let introducer;
         if (introducerType === "MEMBER") {
-            introducer = await MemberModel.findOne({ member_id: introducerId });
+            introducer = await MemberModel.findOne({ 
+                $or: [
+                    { member_id: introducerId },
+                    { Member_id: introducerId }
+                ]
+            });
         } else if (introducerType === "AGENT") {
             introducer = await AgentModel.findOne({ agent_id: introducerId });
         }
@@ -172,8 +182,14 @@ const calculateCommissions = async (transaction) => {
         let sourceUser;
         let sourceType = "MEMBER";
 
-        // Try to find as member first
-        sourceUser = await MemberModel.findOne({ member_id: memberId });
+        // Try to find as member first (search both case variants)
+        sourceUser = await MemberModel.findOne({ 
+            $or: [
+                { member_id: memberId },
+                { Member_id: memberId }
+            ]
+        });
+        
         if (!sourceUser) {
             // Try as agent
             sourceUser = await AgentModel.findOne({ agent_id: memberId });
@@ -193,21 +209,45 @@ const calculateCommissions = async (transaction) => {
 
         // Check if source member is a senior citizen
         const ageThreshold = config.seniorCitizenAgeThreshold || 60;
-        // Try both field names - dob is used in member model, date_of_birth is used in agent model
-        const dobField = sourceUser.dob || sourceUser.date_of_birth;
+        // Try various field names for DOB and Name
+        const dobField = sourceUser.dob || sourceUser.date_of_birth || sourceUser.Date_of_birth;
+        const sourceName = sourceUser.name || sourceUser.Name || `Member-${memberId}`;
+        
         const isSenior = isSeniorCitizen(dobField, ageThreshold);
         const citizenType = isSenior ? "seniorCitizen" : "general";
 
         console.log(`\n👤 Source Member Info:`);
-        console.log(`   Name: ${sourceUser.name}`);
+        console.log(`   Name: ${sourceName}`);
         console.log(`   DOB: ${dobField}`);
         console.log(`   Age Threshold: ${ageThreshold}`);
         console.log(`   Status: ${isSenior ? '🧓 Senior Citizen' : '👥 General'}`);
 
         // Get introducer hierarchy
-        const hierarchy = sourceUser.introducer_hierarchy || [];
+        let hierarchy = sourceUser.introducer_hierarchy || [];
+        
+        // If hierarchy is empty, try to build it on the fly using sponsor fields
         if (hierarchy.length === 0) {
-            console.log(`No introducer hierarchy for ${memberId}`);
+            const sponsorId = sourceUser.introducer || sourceUser.sponsor_id || sourceUser.Sponsor_code;
+            if (sponsorId) {
+                console.log(`Building on-the-fly hierarchy for ${memberId} using sponsor: ${sponsorId}`);
+                // Try to find if sponsor is an agent or member
+                let sponsorType = "MEMBER";
+                let sponsor = await MemberModel.findOne({ $or: [{ member_id: sponsorId }, { Member_id: sponsorId }] });
+                if (!sponsor) {
+                    sponsor = await AgentModel.findOne({ agent_id: sponsorId });
+                    sponsorType = "AGENT";
+                }
+                
+                if (sponsor) {
+                    const { buildIntroducerHierarchy } = require("./commissionUtils");
+                    hierarchy = await buildIntroducerHierarchy(sponsorId, sponsorType);
+                    console.log(`Generated hierarchy: ${hierarchy.join(' -> ')}`);
+                }
+            }
+        }
+
+        if (hierarchy.length === 0) {
+            console.log(`No introducer or sponsor hierarchy for ${memberId}`);
             return [];
         }
 
@@ -230,7 +270,12 @@ const calculateCommissions = async (transaction) => {
             }
 
             // Find the beneficiary
-            let beneficiary = await MemberModel.findOne({ member_id: beneficiaryId });
+            let beneficiary = await MemberModel.findOne({ 
+                $or: [
+                    { member_id: beneficiaryId },
+                    { Member_id: beneficiaryId }
+                ]
+            });
             let beneficiaryType = "MEMBER";
 
             if (!beneficiary) {
@@ -285,8 +330,8 @@ const calculateCommissions = async (transaction) => {
             processedBeneficiaries.add(beneficiaryId);
 
             // Get beneficiary name with fallback for empty/null names
-            const beneficiaryName = beneficiary.name?.trim() || `Member-${beneficiaryId}`;
-            const sourceName = sourceUser.name?.trim() || `Member-${memberId}`;
+            const beneficiaryName = (beneficiary.name || beneficiary.Name || "").trim() || `Member-${beneficiaryId}`;
+            const finalSourceName = (sourceUser.name || sourceUser.Name || "").trim() || `Member-${memberId}`;
 
             commissions.push({
                 level,
@@ -294,7 +339,7 @@ const calculateCommissions = async (transaction) => {
                 beneficiary_name: beneficiaryName,
                 beneficiary_type: beneficiaryType,
                 source_id: memberId,
-                source_name: sourceName,
+                source_name: finalSourceName,
                 source_type: sourceType,
                 source_citizen_type: citizenType,
                 is_senior_citizen: isSenior,
@@ -357,7 +402,7 @@ const distributeCommissions = async (commissions) => {
                     // Update agent's commission balance using updateOne to bypass validation
                     const newBalance = (parseFloat(agent.commission_balance) || 0) + commission.commission_amount;
                     await AgentModel.updateOne(
-                        { agent_id: commission.beneficiary_id },
+                        { _id: agent._id },
                         { $set: { commission_balance: newBalance } }
                     );
 
@@ -390,7 +435,7 @@ const distributeCommissions = async (commissions) => {
                 const member = await MemberModel.findOne({
                     $or: [
                         { member_id: commission.beneficiary_id },
-                        { member_id: String(commission.beneficiary_id) }
+                        { Member_id: commission.beneficiary_id }
                     ]
                 });
 
@@ -400,7 +445,7 @@ const distributeCommissions = async (commissions) => {
                     // Use updateOne to bypass validation (some members may have empty required fields like 'introducer')
                     const newBalance = (parseFloat(member.commission_balance) || 0) + commission.commission_amount;
                     await MemberModel.updateOne(
-                        { member_id: commission.beneficiary_id },
+                        { _id: member._id },
                         { $set: { commission_balance: newBalance } }
                     );
 

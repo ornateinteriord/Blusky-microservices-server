@@ -121,7 +121,21 @@ async function createBeneficiary(user) {
 ===================================================== */
 exports.submitKYC = async (req, res) => {
   try {
-    const { ref_no, bankAccount, ifsc, pan, address, bankName } = req.body;
+    const {
+      ref_no,
+      bankAccount,
+      ifsc,
+      pan,
+      aadhar_no,
+      address,
+      bankName,
+      panImage,
+      aadhaarImage,
+      checkImage,
+      passbookImage,
+      rationCardImage,
+      profileImage
+    } = req.body;
 
     const member = await MemberModel.findOne({ member_id: ref_no });
     if (!member) {
@@ -139,12 +153,21 @@ exports.submitKYC = async (req, res) => {
     }
 
     // Save details first (audit safety)
-    member.account_number = bankAccount;
-    member.ifsc_code = ifsc;
-    member.pan_no = pan;
-    member.bank_name = bankName;
-    member.address = address;
+    member.account_number = bankAccount || member.account_number;
+    member.ifsc_code = ifsc || member.ifsc_code;
+    member.Pan_no = pan || member.Pan_no;
+    member.pan_no = pan || member.pan_no; // Sync both for compatibility
+    member.aadharcard_no = aadhar_no || member.aadharcard_no;
+    member.bank_name = bankName || member.bank_name;
+    member.address = address || member.address;
     member.kycStatus = "PROCESSING";
+    member.panImage = panImage || member.panImage;
+    member.aadhaarImage = aadhaarImage || member.aadhaarImage;
+    member.checkImage = checkImage || member.checkImage;
+    member.passbookImage = passbookImage || member.passbookImage;
+    member.rationCardImage = rationCardImage || member.rationCardImage;
+    member.profile_image = profileImage || member.profile_image;
+
     await member.save();
 
     // 🧪 SANDBOX BYPASS MODE (For local testing without Cashfree)

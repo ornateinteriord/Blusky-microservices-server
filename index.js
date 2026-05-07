@@ -224,9 +224,9 @@ app.use("/api/packages/addon", AddOnPackageRoutes);
 app.use("/chat", ChatRoutes);
 
 // NIDHI API MOUNTS
+app.use("/transaction", NidhiTransactionRoutes);
 app.use("/agent", AgentRoutes);
 app.use("/member", NidhiMemberRoutes);
-app.use("/transaction", NidhiTransactionRoutes);
 app.use("/banking", ReceiptsRoutes);
 app.use("/banking", PaymentsRoutes);
 app.use("/banking/cash-transactions", CashTransactionRoutes);

@@ -641,6 +641,7 @@ exports.transferMoney = async (req, res) => {
 
     try {
         const { from, to, amount } = req.body;
+        console.log("💰 Money Transfer Request:", { from, to, amount });
 
         // Validate input
         if (!from || !to || !amount) {
@@ -659,11 +660,17 @@ exports.transferMoney = async (req, res) => {
 
         // Validate sender member exists and is active
         const allMembers = await MemberModel.find({});
-        const senderMember = allMembers.find(m => m.member_id === from.member_id || m.member_id === parseInt(from.member_id));
+        console.log(`🔍 Found ${allMembers.length} members in DB`);
+        const senderMember = allMembers.find(m => m.member_id === from.member_id || m.member_id === parseInt(from.member_id) || m.Member_id === from.member_id);
         if (!senderMember) {
-            return res.status(404).json({
+            console.log("❌ Sender member NOT found. Search ID:", from.member_id);
+            // Log a few member IDs to see the format
+            if (allMembers.length > 0) {
+                console.log("Sample Member IDs:", allMembers.slice(0, 3).map(m => m.member_id || m.Member_id));
+            }
+            return res.status(400).json({
                 success: false,
-                message: "Sender member not found"
+                message: `Sender member not found with ID: ${from.member_id}`
             });
         }
 
@@ -675,11 +682,12 @@ exports.transferMoney = async (req, res) => {
         }
 
         // Validate receiver member exists and is active
-        const receiverMember = allMembers.find(m => m.member_id === to.member_id || m.member_id === parseInt(to.member_id));
+        const receiverMember = allMembers.find(m => m.member_id === to.member_id || m.member_id === parseInt(to.member_id) || m.Member_id === to.member_id);
         if (!receiverMember) {
-            return res.status(404).json({
+            console.log("❌ Receiver member NOT found. Search ID:", to.member_id);
+            return res.status(400).json({
                 success: false,
-                message: "Receiver member not found"
+                message: `Receiver member not found with ID: ${to.member_id}`
             });
         }
 
@@ -692,17 +700,27 @@ exports.transferMoney = async (req, res) => {
 
         // Find sender account (handle type mismatches)
         const allAccounts = await AccountsModel.find({});
+        console.log(`🔍 Found ${allAccounts.length} accounts in DB`);
         const senderAccount = allAccounts.find(acc =>
             (acc.account_id === from.account_id || acc.account_id === parseInt(from.account_id)) &&
             (acc.member_id === from.member_id || acc.member_id === parseInt(from.member_id)) &&
             (acc.account_no == from.account_no) &&
             (acc.account_type === from.account_type)
         );
-
+        
         if (!senderAccount) {
-            return res.status(404).json({
+            console.log("❌ Sender account NOT found. Criteria:", from);
+            if (allAccounts.length > 0) {
+                 const matchByNo = allAccounts.filter(a => a.account_no === from.account_no);
+                 console.log(`Found ${matchByNo.length} accounts matching account_no ${from.account_no}`);
+                 if (matchByNo.length > 0) {
+                     console.log("Sample account member_id in DB:", matchByNo[0].member_id);
+                     console.log("Comparison result for member_id:", matchByNo[0].member_id === from.member_id);
+                 }
+            }
+            return res.status(400).json({
                 success: false,
-                message: "Sender account not found"
+                message: `Sender account not found (No: ${from.account_no}, Type: ${from.account_type})`
             });
         }
 
@@ -723,9 +741,10 @@ exports.transferMoney = async (req, res) => {
         );
 
         if (!receiverAccount) {
-            return res.status(404).json({
+            console.log("❌ Receiver account NOT found. Criteria:", to);
+            return res.status(400).json({
                 success: false,
-                message: "Receiver account not found"
+                message: `Receiver account not found (No: ${to.account_no}, Type: ${to.account_type})`
             });
         }
 

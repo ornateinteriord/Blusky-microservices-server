@@ -308,7 +308,7 @@ const processDailyROI = async (targetMemberId = null) => {
                                 });
 
                                 // Distribute MLM commission for this add-on's daily ROI - NOW ATOMIC
-                                await mlmService.distributeROICommission(addon.member_id, dailyPayoutAmount, session, processingDateStr);
+                                await mlmService.distributeROICommission(addon.member_id, dailyPayoutAmount, session, processingDateStr, `AddOn-${addon.package_id}`);
 
                                 await payout.save({ session });
                                 await transaction.save({ session });
@@ -517,7 +517,7 @@ const processAddOnROI = async (addon, member) => {
         await Promise.all([payout.save({ session }), transaction.save({ session }), addon.save({ session })]);
 
         // Distribute MLM commission for this add-on's daily ROI - NOW ATOMIC
-        await mlmService.distributeROICommission(addon.member_id, dailyAmt, session, todayStr);
+        await mlmService.distributeROICommission(addon.member_id, dailyAmt, session, todayStr, `AddOn-${addon.package_id}`);
 
         await session.commitTransaction();
 

@@ -464,7 +464,7 @@ const processMemberActivation = async (activatedMemberId) => {
  * @param {number} roiAmount - The ROI amount received
  * @returns {Promise<Array>} Results of commission distribution
  */
-const distributeROICommission = async (memberId, roiAmount, session = null, customDate = null) => {
+const distributeROICommission = async (memberId, roiAmount, session = null, customDate = null, sourceRef = "Base") => {
   try {
     if (!roiAmount || roiAmount <= 0) return [];
 
@@ -506,8 +506,8 @@ const distributeROICommission = async (memberId, roiAmount, session = null, cust
         date: today,
         memberId: upline.sponsor_id,
         payout_type: "ROI Level Benefit",
-        // ✅ FIXED: ref_no must be unique per day/member/level to avoid DB collision
-        ref_no: `ROI-L-${memberId}-${upline.level}-${today}`,
+        // ✅ FIXED: ref_no must be unique per day/member/level/source to avoid DB collision
+        ref_no: `ROI-L-${memberId}-${upline.level}-${today}-${sourceRef}`,
         amount: commissionAmount,
         level: upline.level,
         sponsored_member_id: memberId,

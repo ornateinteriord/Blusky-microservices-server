@@ -291,18 +291,25 @@ const getMemberRequests = async (req, res) => {
 // User instantly buys a package using Top Up Wallet
 const buyPackageDirectly = async (req, res) => {
   try {
-    const { member_id, requested_amount } = req.body;
+    const { member_id, requested_amount, target_member_id } = req.body;
 
     if (!member_id || !requested_amount) {
       return res.status(400).json({ success: false, message: "Member ID and Amount are required" });
     }
 
-    const member = await MemberModel.findOne({ Member_id: member_id });
-    if (!member) {
-      return res.status(404).json({ success: false, message: "Member not found" });
+    const finalTargetId = target_member_id || member_id;
+
+    const payer = await MemberModel.findOne({ Member_id: member_id });
+    if (!payer) {
+      return res.status(404).json({ success: false, message: "Payer member not found" });
     }
 
-    // 1. Verify Top Up Balance
+    const targetMember = await MemberModel.findOne({ Member_id: finalTargetId });
+    if (!targetMember) {
+      return res.status(404).json({ success: false, message: "Target member not found" });
+    }
+
+    // 1. Verify Top Up Balance for Payer
     const transactions = await TransactionModel.find({ member_id: member_id });
     const topUpTransactions = transactions.filter(tx => tx.transaction_type === 'Top up');
     
@@ -319,7 +326,7 @@ const buyPackageDirectly = async (req, res) => {
       return res.status(400).json({ success: false, message: "Insufficient Top Up Balance." });
     }
 
-    // 2. Deduct from Top Up Balance
+    // 2. Deduct from Top Up Balance (Payer)
     const lastTx = await TransactionModel.findOne({}).sort({ createdAt: -1 }).exec();
     let newTxId = 1;
     if (lastTx && lastTx.transaction_id) {
@@ -327,13 +334,18 @@ const buyPackageDirectly = async (req, res) => {
       newTxId = lastIdNum + 1;
     }
 
+    let description = "Direct Package Purchase";
+    if (member_id !== finalTargetId) {
+      description = `Package Purchase for ${finalTargetId}`;
+    }
+
     const deductionTx = new TransactionModel({
       transaction_id: newTxId.toString(),
       transaction_date: new Date(),
       member_id: member_id,
-      Name: member.Name,
-      mobileno: member.mobileno,
-      description: "Direct Package Purchase",
+      Name: payer.Name,
+      mobileno: payer.mobileno,
+      description: description,
       transaction_type: "Top up", // Crucial: must be 'Top up' to affect topUpBalance correctly
       ew_credit: 0,
       ew_debit: Number(requested_amount),
@@ -343,28 +355,28 @@ const buyPackageDirectly = async (req, res) => {
     });
     await deductionTx.save();
 
-    // 3. Create Package & ROI Logic (Same as evaluateRequest Approved)
+    // 3. Create Package & ROI Logic for Target Member
     const request_id = `DIR${Date.now()}`; // Pseudo request ID for tracking
     
     // CASE A: Primary Package
-    if (!member.package_value || member.package_value === 0) {
-      member.package_value = requested_amount;
-      member.spackage = `PKG-${requested_amount}`;
-      member.status = "active";
-      member.roi_status = "Active";
-      member.roi_start_date = moment().utcOffset("+05:30").format("YYYY-MM-DD");
-      member.roi_last_payout_date = member.roi_start_date; 
-      member.roi_payout_target = requested_amount * 2;
-      member.roi_payout_count = 0;
-      await member.save();
+    if (!targetMember.package_value || targetMember.package_value === 0) {
+      targetMember.package_value = requested_amount;
+      targetMember.spackage = `PKG-${requested_amount}`;
+      targetMember.status = "active";
+      targetMember.roi_status = "Active";
+      targetMember.roi_start_date = moment().utcOffset("+05:30").format("YYYY-MM-DD");
+      targetMember.roi_last_payout_date = targetMember.roi_start_date; 
+      targetMember.roi_payout_target = requested_amount * 2;
+      targetMember.roi_payout_count = 0;
+      await targetMember.save();
 
       const payoutId = Date.now() + Math.floor(Math.random() * 1000);
       const payout = new PayoutModel({
         payout_id: payoutId,
         date: moment().utcOffset("+05:30").toDate(),
-        memberId: member.Member_id,
+        memberId: targetMember.Member_id,
         payout_type: "ROI",
-        ref_no: `ACT-${member.Member_id}-0`,
+        ref_no: `ACT-${targetMember.Member_id}-0`,
         amount: 0,
         count: 0,
         days: 300,
@@ -374,10 +386,10 @@ const buyPackageDirectly = async (req, res) => {
 
       const activationTx = new TransactionModel({
         transaction_id: `ACT-TX-${payoutId}`,
-        transaction_date: member.roi_last_payout_date,
-        member_id: member.Member_id,
-        Name: member.Name,
-        mobileno: member.mobileno,
+        transaction_date: targetMember.roi_last_payout_date,
+        member_id: targetMember.Member_id,
+        Name: targetMember.Name,
+        mobileno: targetMember.mobileno,
         description: `Package Activation – Daily ROI (Day 0/300)`,
         transaction_type: "ROI Payout",
         ew_credit: "0",
@@ -393,7 +405,7 @@ const buyPackageDirectly = async (req, res) => {
       const activationDate = moment().utcOffset("+05:30").format("YYYY-MM-DD");
       const newAddOn = new AddOnPackageModel({
         package_id: `PKG-A-${Date.now()}`,
-        member_id: member_id,
+        member_id: finalTargetId,
         amount: requested_amount,
         roi_status: "Active",
         roi_payout_target: requested_amount * 2,
@@ -409,7 +421,7 @@ const buyPackageDirectly = async (req, res) => {
       const payout = new PayoutModel({
         payout_id: payoutId,
         date: moment().utcOffset("+05:30").toDate(),
-        memberId: member_id,
+        memberId: finalTargetId,
         payout_type: "ROI",
         ref_no: `ACT-A-${newAddOn.package_id}-0`,
         amount: 0,
@@ -422,9 +434,9 @@ const buyPackageDirectly = async (req, res) => {
       const addonActivationTx = new TransactionModel({
         transaction_id: `ACT-A-TX-${payoutId}`,
         transaction_date: activationDate,
-        member_id: member_id,
-        Name: member.Name,
-        mobileno: member.mobileno,
+        member_id: finalTargetId,
+        Name: targetMember.Name,
+        mobileno: targetMember.mobileno,
         description: `Add-On Activation – Day 0/300 ($${requested_amount} pkg)`,
         transaction_type: "ROI Payout",
         ew_credit: "0",
@@ -436,11 +448,11 @@ const buyPackageDirectly = async (req, res) => {
       await Promise.all([payout.save(), addonActivationTx.save()]);
     }
 
-    // 4. MLM Commissions
+    // 4. MLM Commissions - For Target Member's Sponsor
     try {
       const commissions = await mlmService.calculateCommissions(
-        member_id,
-        member.sponsor_id,
+        finalTargetId,
+        targetMember.sponsor_id,
         requested_amount, 
         "Add-On"
       );
@@ -466,15 +478,15 @@ const buyPackageDirectly = async (req, res) => {
       await ReceiptsModel.create({
         receipt_id: newReceiptId,
         receipt_date: new Date(),
-        received_from: member.Name,
-        receipt_details: `Direct Package Purchase - ${requested_amount}`,
+        received_from: payer.Name,
+        receipt_details: `Direct Package Purchase ${member_id !== finalTargetId ? 'for ' + finalTargetId : ''} - ${requested_amount}`,
         mode_of_payment_received: "Top Up Wallet",
         amount: requested_amount,
         status: "active",
         ref_no: request_id,
         receipt_no: `REC-${Date.now()}`,
         entered_by: "SYSTEM_DIRECT",
-        branch_code: member.branch_id || "BRN001",
+        branch_code: payer.branch_id || "BRN001",
         member_id: member_id
       });
     } catch (receiptErr) {

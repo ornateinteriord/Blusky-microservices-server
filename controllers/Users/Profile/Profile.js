@@ -182,7 +182,7 @@ const activateMemberPackage = async (req, res) => {
       member_id: memberId,
       amount: amount,
       roi_status: "Active",
-      roi_payout_target: amount * 2,
+      roi_payout_target: amount * 3,
       roi_payout_count: 0,
       roi_start_date: activationDate,
       roi_last_payout_date: activationDate,
@@ -402,7 +402,9 @@ const updateMemberStatus = async (req, res) => {
         updatePayload.roi_payout_count = 0;
         updatePayload.roi_start_date = activationDate;
         updatePayload.roi_last_payout_date = activationDate;
-        updatePayload.roi_payout_target = (existingMember.package_value || 0) * 2;
+        if (existingMember.package_value && existingMember.package_value > 0) {
+            updatePayload.roi_payout_target = (existingMember.package_value || 0) * 3;
+        }
     }
 
     const updatedMember = await MemberModel.findOneAndUpdate(query, { $set: updatePayload }, { new: true });

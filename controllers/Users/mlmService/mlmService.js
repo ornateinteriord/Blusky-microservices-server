@@ -18,17 +18,30 @@ const TransactionModel = require("../../../models/Transaction/Transaction");
  * 
  * Total potential commission per referral: $300 ($100 + $25×4 + $15×5 + $5×5)
  */
-const commissionPercentages = {
-  1: 5,     // 5%
-  2: 2,     // 2%
-  3: 0.5,   // 0.5%
-  4: 0.5,   // 0.5%
-  5: 0.5,   // 0.5%
-  6: 0.25,  // 0.25%
-  7: 0.25,  // 0.25%
-  8: 0.25,  // 0.25%
-  9: 0.25,  // 0.25%
-  10: 0.25  // 0.25%
+const referralCommissionPercentages = {
+  1: 20,    // 20%
+  2: 3,     // 3%
+  3: 2,     // 2%
+  4: 1,     // 1%
+  5: 1,     // 1%
+  6: 0.75,  // 0.75%
+  7: 0.75,  // 0.75%
+  8: 0.5,   // 0.5%
+  9: 0.5,   // 0.5%
+  10: 0.5   // 0.5%
+};
+
+const roiCommissionPercentages = {
+  1: 20,    // 20%
+  2: 3,     // 3%
+  3: 1,     // 1%
+  4: 1,     // 1%
+  5: 1,     // 1%
+  6: 1,     // 1%
+  7: 1,     // 1%
+  8: 1,     // 1%
+  9: 1,     // 1%
+  10: 1     // 1%
 };
 
 const getOrdinal = (number) => {
@@ -138,7 +151,7 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
       }
 
       // Get percentage based on level
-      const percentage = commissionPercentages[upline.level] || 0;
+      const percentage = referralCommissionPercentages[upline.level] || 0;
       
       if (percentage > 0) {
         const commissionAmount = Number(((packageValue * percentage) / 100).toFixed(2));
@@ -376,13 +389,9 @@ const getUplineTree = async (memberId, maxLevels = 15) => {
 
 const getCommissionSummary = () => {
   return {
-    total_levels: 15,
-    level_1_commission: 100,
-    levels_2_to_5_commission: 25,
-    levels_6_to_10_commission: 15,
-    levels_11_to_15_commission: 5,
-    total_potential: 300,
-    rates: commissionRates,
+    total_levels: 10,
+    referral_rates: referralCommissionPercentages,
+    roi_rates: roiCommissionPercentages,
     condition: "Commissions only for sponsors with 'active' status"
   };
 };
@@ -490,8 +499,8 @@ const distributeROICommission = async (memberId, roiAmount, session = null, cust
         continue;
       }
 
-      // Get percentage based on level from existing commissionPercentages
-      const percentage = commissionPercentages[upline.level] || 0;
+      // Get percentage based on level
+      const percentage = roiCommissionPercentages[upline.level] || 0;
       if (percentage <= 0) continue;
 
       const commissionAmount = Number(((roiAmount * percentage) / 100).toFixed(2));
@@ -571,7 +580,8 @@ const distributeROICommission = async (memberId, roiAmount, session = null, cust
 };
 
 module.exports = {
-  commissionPercentages,
+  referralCommissionPercentages,
+  roiCommissionPercentages,
   getOrdinal,
   findUplineSponsors,
   createLevelBenefitsTransaction,

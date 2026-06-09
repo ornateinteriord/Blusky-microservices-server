@@ -366,7 +366,7 @@ const buyPackageDirectly = async (req, res) => {
       targetMember.roi_status = "Active";
       targetMember.roi_start_date = moment().utcOffset("+05:30").format("YYYY-MM-DD");
       targetMember.roi_last_payout_date = targetMember.roi_start_date; 
-      targetMember.roi_payout_target = requested_amount * 2;
+      targetMember.roi_payout_target = requested_amount * 3;
       targetMember.roi_payout_count = 0;
       await targetMember.save();
 
@@ -379,7 +379,7 @@ const buyPackageDirectly = async (req, res) => {
         ref_no: `ACT-${targetMember.Member_id}-0`,
         amount: 0,
         count: 0,
-        days: 300,
+        days: 120,
         status: "Approved",
         description: "Package Activation"
       });
@@ -390,7 +390,7 @@ const buyPackageDirectly = async (req, res) => {
         member_id: targetMember.Member_id,
         Name: targetMember.Name,
         mobileno: targetMember.mobileno,
-        description: `Package Activation – Daily ROI (Day 0/300)`,
+        description: `Package Activation – Daily ROI (Day 0/120)`,
         transaction_type: "ROI Payout",
         ew_credit: "0",
         ew_debit: "0",
@@ -408,7 +408,7 @@ const buyPackageDirectly = async (req, res) => {
         member_id: finalTargetId,
         amount: requested_amount,
         roi_status: "Active",
-        roi_payout_target: requested_amount * 2,
+        roi_payout_target: requested_amount * 3,
         roi_payout_count: 0,
         roi_start_date: activationDate,
         roi_last_payout_date: activationDate, 
@@ -426,7 +426,7 @@ const buyPackageDirectly = async (req, res) => {
         ref_no: `ACT-A-${newAddOn.package_id}-0`,
         amount: 0,
         count: 0,
-        days: 300,
+        days: 120,
         status: "Approved",
         description: "Add-On Activation"
       });
@@ -437,7 +437,7 @@ const buyPackageDirectly = async (req, res) => {
         member_id: finalTargetId,
         Name: targetMember.Name,
         mobileno: targetMember.mobileno,
-        description: `Add-On Activation – Day 0/300 ($${requested_amount} pkg)`,
+        description: `Add-On Activation – Day 0/120 ($${requested_amount} pkg)`,
         transaction_type: "ROI Payout",
         ew_credit: "0",
         ew_debit: "0",

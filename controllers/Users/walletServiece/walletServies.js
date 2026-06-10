@@ -106,6 +106,14 @@ const getWalletOverview = async (req, res) => {
       )
       .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
 
+    const singleLineIncome = nonLoanTransactions
+      .filter(tx =>
+        (tx.transaction_type === "Single Line Income" || tx.transaction_type === "Single Level Income") &&
+        tx.status === "Completed"
+      )
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+
+
     // Calculate loan amounts separately (for information only)
     const loanTransactions = transactions.filter(tx =>
       tx.transaction_type?.toLowerCase().includes('loan') ||
@@ -134,11 +142,14 @@ const getWalletOverview = async (req, res) => {
         directBenefits: directBenefits.toFixed(2),
         repaymentCommission: repaymentCommission.toFixed(2),
         roiBenefits: roiBenefits.toFixed(2),
-        totalBenefits: (levelBenefits + roiLevelBenefits + directBenefits + repaymentCommission + roiBenefits).toFixed(2),
+        singleLineIncome: singleLineIncome.toFixed(2),
+        totalBenefits: (levelBenefits + roiLevelBenefits + directBenefits + repaymentCommission + roiBenefits + singleLineIncome).toFixed(2),
         pendingWithdrawals: pendingWithdrawals.toFixed(2),
         primaryPackage: member.package_value || 0,
         addOnPackages: totalAddonAmount,
         totalPackages: (member.package_value || 0) + totalAddonAmount,
+        // Upgrade Wallet
+        upgradeWalletBalance: (member.upgrade_wallet || 0).toFixed(2),
         // Top Up Wallet (completely separate)
         topUpBalance: topUpBalance.toFixed(2),
         topUpTransactions: topUpTransactions.sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date)),

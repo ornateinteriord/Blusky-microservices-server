@@ -2,46 +2,43 @@ const MemberModel = require("../../../models/Users/Member");
 const PayoutModel = require("../../../models/Payout/Payout");
 const TransactionModel = require("../../../models/Transaction/Transaction");
 
-/**
- * Commission Rates for MLM System
- * 
- * Structure:
- * - Level 1 (Direct Referral): $100 - When a member directly refers someone
- * - Levels 2-5 (Indirect Referrals): $25 each
- * - Levels 6-10 (Indirect Referrals): $15 each
- * - Levels 11-15 (Indirect Referrals): $5 each
- * 
- * Example:
- * - A refers B → A gets $100 (Level 1)
- * - B refers C → B gets $100 (Level 1), A gets $25 (Level 2)
- * - C refers D → C gets $100 (Level 1), B gets $25 (Level 2), A gets $25 (Level 3)
- * 
- * Total potential commission per referral: $300 ($100 + $25×4 + $15×5 + $5×5)
- */
 const referralCommissionPercentages = {
-  1: 20,    // 20%
-  2: 3,     // 3%
-  3: 2,     // 2%
-  4: 1,     // 1%
-  5: 1,     // 1%
-  6: 0.75,  // 0.75%
-  7: 0.75,  // 0.75%
-  8: 0.5,   // 0.5%
-  9: 0.5,   // 0.5%
-  10: 0.5   // 0.5%
+  1: 20,
+  2: 5,
+  3: 1,
+  4: 0.5,
+  5: 0.5,
+  6: 0.5,
+  7: 0.5,
+  8: 0.5,
+  9: 0.5,
+  10: 0.5
+};
+
+const packageCommissionPercentages = {
+  1: 20,
+  2: 3,
+  3: 1,
+  4: 0.5,
+  5: 0.5,
+  6: 0.5,
+  7: 0.5,
+  8: 0.5,
+  9: 0.5,
+  10: 0.5
 };
 
 const roiCommissionPercentages = {
-  1: 20,    // 20%
-  2: 3,     // 3%
-  3: 1,     // 1%
-  4: 1,     // 1%
-  5: 1,     // 1%
-  6: 1,     // 1%
-  7: 1,     // 1%
-  8: 1,     // 1%
-  9: 1,     // 1%
-  10: 1     // 1%
+  1: 20,
+  2: 3,
+  3: 1,
+  4: 1,
+  5: 1,
+  6: 1,
+  7: 1,
+  8: 1,
+  9: 1,
+  10: 1
 };
 
 const getOrdinal = (number) => {
@@ -50,16 +47,6 @@ const getOrdinal = (number) => {
   return number + (suffixes[(value - 20) % 10] || suffixes[value] || suffixes[0]);
 };
 
-/**
- * Finds all upline sponsors from a given member up to maxLevels
- * Starts from the member and traverses up the sponsor chain
- * Level 1 = Direct sponsor, Level 2 = Sponsor's sponsor, etc.
- * 
- * Example: If A refers B, and B refers C:
- * - When C is activated, findUplineSponsors(C) returns:
- *   - Level 1: B (C's direct sponsor) - gets $100
- *   - Level 2: A (B's sponsor) - gets $25
- */
 const findUplineSponsors = async (memberId, maxLevels = 15) => {
   const uplineSponsors = [];
   let currentMemberId = memberId;
@@ -77,8 +64,6 @@ const findUplineSponsors = async (memberId, maxLevels = 15) => {
       break; // Sponsor not found
     }
 
-    // Increment level and add to upline chain
-    // Level 1 = Direct sponsor, Level 2 = Sponsor's sponsor, etc.
     level++;
     uplineSponsors.push({
       level: level,
@@ -98,26 +83,7 @@ const findUplineSponsors = async (memberId, maxLevels = 15) => {
   return uplineSponsors;
 };
 
-/**
- * Calculates commissions for all eligible upline sponsors when a new member joins
- * 
- * Commission Structure:
- * - Level 1 (Direct Sponsor): $100
- * - Levels 2-5 (Indirect Sponsors): $25 each
- * - Levels 6-10 (Indirect Sponsors): $15 each
- * - Levels 11-15 (Indirect Sponsors): $5 each
- * 
- * Example Flow:
- * - A refers B → When B activates: A gets $100 (Level 1)
- * - B refers C → When C activates: B gets $100 (Level 1), A gets $25 (Level 2)
- * - C refers D → When D activates: C gets $100 (Level 1), B gets $25 (Level 2), A gets $25 (Level 3)
- * 
- * @param {string} newMemberId - The newly activated member's ID
- * @param {string} directSponsorId - The direct sponsor's ID (for reference)
- * @param {number} specificAmount - Optional specific amount for commission
- * @param {string} pkgType - Optional package type (e.g., "Add-On")
- * @returns {Array} Array of commission objects for eligible sponsors
- */
+
 const calculateCommissions = async (newMemberId, directSponsorId, specificAmount = null, pkgType = "Base") => {
   try {
     // Find the new member
@@ -150,9 +116,10 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
         continue;
       }
 
-      // Get percentage based on level
-      const percentage = referralCommissionPercentages[upline.level] || 0;
-      
+      // Get percentage based on level and package type
+      const percentagesList = pkgType === "Add-On" ? packageCommissionPercentages : referralCommissionPercentages;
+      const percentage = percentagesList[upline.level] || 0;
+
       if (percentage > 0) {
         const commissionAmount = Number(((packageValue * percentage) / 100).toFixed(2));
 
@@ -278,6 +245,10 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
     // Use a unique compound ID to ensure consistency and speed in high-concurrency 
     const newTransactionId = `T-L-${payout_id}-${Math.floor(Math.random() * 1000)}`;
 
+    // Split the commission 50/50 between Earnings Wallet and Upgrade Wallet
+    const earningsAmount = Number((amount / 2).toFixed(2));
+    const upgradeAmount = Number((amount - earningsAmount).toFixed(2));
+
     const transaction = new TransactionModel({
       transaction_id: newTransactionId,
       transaction_date: new Date(),
@@ -287,7 +258,8 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
       reference_no: payout_id.toString(),
       description: payout_type,
       transaction_type: "Level Benefits",
-      ew_credit: amount.toString(),
+      ew_credit: earningsAmount.toString(),
+      uw_credit: upgradeAmount.toString(),
       ew_debit: "0",
       status: "Completed",
       level: level,
@@ -298,11 +270,16 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
     });
 
     await transaction.save({ session });
-    
-    // Add amount to sponsor's wallet balance
+
+    // Add amounts to sponsor's respective wallets
     await MemberModel.findOneAndUpdate(
       { Member_id: memberId },
-      { $inc: { wallet_balance: amount } },
+      { 
+        $inc: { 
+          wallet_balance: earningsAmount,
+          upgrade_wallet: upgradeAmount 
+        } 
+      },
       { session }
     );
 
@@ -473,6 +450,7 @@ const processMemberActivation = async (activatedMemberId) => {
  * @param {number} roiAmount - The ROI amount received
  * @returns {Promise<Array>} Results of commission distribution
  */
+/* DISABLED AS PER USER REQUEST (NO ROI)
 const distributeROICommission = async (memberId, roiAmount, session = null, customDate = null, sourceRef = "Base") => {
   try {
     if (!roiAmount || roiAmount <= 0) return [];
@@ -578,6 +556,7 @@ const distributeROICommission = async (memberId, roiAmount, session = null, cust
     throw error;
   }
 };
+*/
 
 module.exports = {
   referralCommissionPercentages,
@@ -590,6 +569,6 @@ module.exports = {
   processCommissions,
   getUplineTree,
   getCommissionSummary,
-  processMemberActivation,
-  distributeROICommission
+  processMemberActivation
+  // distributeROICommission
 };

@@ -309,6 +309,16 @@ const buyPackageDirectly = async (req, res) => {
       return res.status(404).json({ success: false, message: "Target member not found" });
     }
 
+    // 0. Check if package already purchased
+    if (Number(targetMember.package_value) === Number(requested_amount)) {
+      return res.status(400).json({ success: false, message: "You have already purchased this package." });
+    }
+
+    const existingAddOn = await AddOnPackageModel.findOne({ member_id: finalTargetId, amount: Number(requested_amount) });
+    if (existingAddOn) {
+      return res.status(400).json({ success: false, message: "You have already purchased this package." });
+    }
+
     // 1. Verify Top Up Balance for Payer
     const transactions = await TransactionModel.find({ member_id: member_id });
     const topUpTransactions = transactions.filter(tx => tx.transaction_type === 'Top up');
@@ -355,7 +365,7 @@ const buyPackageDirectly = async (req, res) => {
     });
     await deductionTx.save();
 
-    // 3. Create Package & ROI Logic for Target Member
+    // 3. Create Package & Single Line Income Logic for Target Member
     const request_id = `DIR${Date.now()}`; // Pseudo request ID for tracking
     
     // CASE A: Primary Package
@@ -363,90 +373,50 @@ const buyPackageDirectly = async (req, res) => {
       targetMember.package_value = requested_amount;
       targetMember.spackage = `PKG-${requested_amount}`;
       targetMember.status = "active";
-      targetMember.roi_status = "Active";
-      targetMember.roi_start_date = moment().utcOffset("+05:30").format("YYYY-MM-DD");
-      targetMember.roi_last_payout_date = targetMember.roi_start_date; 
-      targetMember.roi_payout_target = requested_amount * 3;
-      targetMember.roi_payout_count = 0;
       await targetMember.save();
-
-      const payoutId = Date.now() + Math.floor(Math.random() * 1000);
-      const payout = new PayoutModel({
-        payout_id: payoutId,
-        date: moment().utcOffset("+05:30").toDate(),
-        memberId: targetMember.Member_id,
-        payout_type: "ROI",
-        ref_no: `ACT-${targetMember.Member_id}-0`,
-        amount: 0,
-        count: 0,
-        days: 120,
-        status: "Approved",
-        description: "Package Activation"
-      });
-
-      const activationTx = new TransactionModel({
-        transaction_id: `ACT-TX-${payoutId}`,
-        transaction_date: targetMember.roi_last_payout_date,
-        member_id: targetMember.Member_id,
-        Name: targetMember.Name,
-        mobileno: targetMember.mobileno,
-        description: `Package Activation – Daily ROI (Day 0/120)`,
-        transaction_type: "ROI Payout",
-        ew_credit: "0",
-        ew_debit: "0",
-        status: "Completed",
-        benefit_type: "ROI",
-        reference_no: payout.ref_no
-      });
-      await Promise.all([payout.save(), activationTx.save()]);
     } 
     // CASE B: Add-On Package
     else {
-      const activationDate = moment().utcOffset("+05:30").format("YYYY-MM-DD");
       const newAddOn = new AddOnPackageModel({
         package_id: `PKG-A-${Date.now()}`,
         member_id: finalTargetId,
         amount: requested_amount,
-        roi_status: "Active",
-        roi_payout_target: requested_amount * 3,
-        roi_payout_count: 0,
-        roi_start_date: activationDate,
-        roi_last_payout_date: activationDate, 
         request_id: request_id,
         admin_id: "SYSTEM_DIRECT"
       });
       await newAddOn.save();
+    }
 
-      const payoutId = Date.now() + Math.floor(Math.random() * 1000);
-      const payout = new PayoutModel({
-        payout_id: payoutId,
-        date: moment().utcOffset("+05:30").toDate(),
-        memberId: finalTargetId,
-        payout_type: "ROI",
-        ref_no: `ACT-A-${newAddOn.package_id}-0`,
-        amount: 0,
-        count: 0,
-        days: 120,
-        status: "Approved",
-        description: "Add-On Activation"
-      });
-
-      const addonActivationTx = new TransactionModel({
-        transaction_id: `ACT-A-TX-${payoutId}`,
-        transaction_date: activationDate,
+    // --- NEW: Single Line Income (1.5% cashback to the user themselves) ---
+    const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
+    
+    if (singleLineIncomeAmount > 0) {
+      const sliPayoutId = Date.now() + Math.floor(Math.random() * 1000);
+      
+      const sliTransaction = new TransactionModel({
+        transaction_id: `SLI${Date.now()}${Math.floor(Math.random() * 1000)}`,
+        transaction_date: new Date().toISOString(),
         member_id: finalTargetId,
         Name: targetMember.Name,
         mobileno: targetMember.mobileno,
-        description: `Add-On Activation – Day 0/120 ($${requested_amount} pkg)`,
-        transaction_type: "ROI Payout",
-        ew_credit: "0",
+        description: `Single Line Income (1.5% of $${requested_amount})`,
+        transaction_type: "Single Level Income",
+        ew_credit: singleLineIncomeAmount.toString(),
         ew_debit: "0",
         status: "Completed",
-        benefit_type: "ROI",
-        reference_no: payout.ref_no
+        net_amount: singleLineIncomeAmount,
+        gross_amount: singleLineIncomeAmount
       });
-      await Promise.all([payout.save(), addonActivationTx.save()]);
+      
+      await sliTransaction.save();
+
+      // Credit Single Line Income to User's Wallet Balance
+      await MemberModel.findOneAndUpdate(
+        { Member_id: finalTargetId },
+        { $inc: { wallet_balance: singleLineIncomeAmount } }
+      );
     }
+    // ----------------------------------------------------------------------
 
     // 4. MLM Commissions - For Target Member's Sponsor
     try {

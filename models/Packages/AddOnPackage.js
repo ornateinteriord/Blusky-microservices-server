@@ -8,7 +8,7 @@ const AddOnPackageSchema = new mongoose.Schema({
   // Independent ROI Tracking
   roi_status: { type: String, enum: ["Pending", "Active", "Completed"], default: "Active" },
   roi_payout_count: { type: Number, default: 0 },
-  roi_payout_target: { type: Number, required: true }, 
+  roi_payout_target: { type: Number, required: false }, 
   roi_last_payout_date: { type: String },
   roi_start_date: { type: String, default: () => new Date().toISOString().split('T')[0] },
 

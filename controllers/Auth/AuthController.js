@@ -122,6 +122,7 @@ const getSponsorDetails = async (req, res) => {
       success: true,
       Member_id: sponsor.Member_id,
       name: sponsor.Name,
+      status: sponsor.status || "Pending",
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

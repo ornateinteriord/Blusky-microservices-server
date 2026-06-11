@@ -386,8 +386,6 @@ const buyPackageDirectly = async (req, res) => {
       });
       await newAddOn.save();
     }
-
-    /*
     // --- NEW: Single Leg Income (1.5% cashback to the user themselves + up to 100 previous buyers of the same package) ---
     const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
     
@@ -395,31 +393,6 @@ const buyPackageDirectly = async (req, res) => {
       // Split 50/50 between Earnings Wallet and Upgrade Wallet
       const earningsAmount = Number((singleLineIncomeAmount / 2).toFixed(2));
       const upgradeAmount = Number((singleLineIncomeAmount - earningsAmount).toFixed(2));
-
-      // 1. Give Single Leg Income to the target member who just bought the package
-      const sliPayoutIdTarget = Date.now() + Math.floor(Math.random() * 1000);
-      
-      const sliTransactionTarget = new TransactionModel({
-        transaction_id: `SLI${Date.now()}${Math.floor(Math.random() * 1000)}`,
-        transaction_date: new Date().toISOString(),
-        member_id: finalTargetId,
-        Name: targetMember.Name,
-        mobileno: targetMember.mobileno,
-        description: `Single Leg Income Cashback ($${requested_amount})`,
-        transaction_type: "Single Leg Income",
-        ew_credit: earningsAmount.toString(),
-        uw_credit: upgradeAmount.toString(),
-        ew_debit: "0",
-        status: "Completed",
-        net_amount: singleLineIncomeAmount,
-        gross_amount: singleLineIncomeAmount
-      });
-      await sliTransactionTarget.save();
-
-      await MemberModel.findOneAndUpdate(
-        { Member_id: finalTargetId },
-        { $inc: { wallet_balance: earningsAmount, upgrade_wallet: upgradeAmount } }
-      );
 
       // 2. Give Single Leg Income to up to 100 previous buyers of the exact same package
       try {
@@ -437,19 +410,27 @@ const buyPackageDirectly = async (req, res) => {
         console.log(`=== SINGLE LEG INCOME DISTRIBUTION START ===`);
         console.log(`Buyer: ${finalTargetId}, Package Amount: $${requested_amount}`);
         
+        const targetMemberTime = new Date(targetMember.createdAt).getTime();
+        const targetMemberId = targetMember.Member_id;
         const eligibleMap = new Map(); // Use map to keep only unique members
         
         for (const buyer of primaryBuyers) {
-          if (!eligibleMap.has(buyer.Member_id)) {
-            eligibleMap.set(buyer.Member_id, { id: buyer.Member_id, name: buyer.Name, phone: buyer.mobileno, time: new Date(buyer.createdAt).getTime() });
+          const buyerTime = new Date(buyer.createdAt).getTime();
+          // Only include upliners (registered BEFORE this user, or same time but lower Member ID)
+          if ((buyerTime < targetMemberTime || (buyerTime === targetMemberTime && buyer.Member_id < targetMemberId)) && !eligibleMap.has(buyer.Member_id)) {
+            eligibleMap.set(buyer.Member_id, { id: buyer.Member_id, name: buyer.Name, phone: buyer.mobileno, time: buyerTime });
           }
         }
         
         for (const addon of addonBuyers) {
           if (!eligibleMap.has(addon.member_id)) {
-            const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Member_id Name mobileno').lean();
+            const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Member_id Name mobileno createdAt').lean();
             if (m) {
-              eligibleMap.set(addon.member_id, { id: m.Member_id, name: m.Name, phone: m.mobileno, time: new Date(addon.createdAt).getTime() });
+              const mTime = new Date(m.createdAt).getTime();
+              // Only include upliners (registered BEFORE this user, or same time but lower Member ID)
+              if (mTime < targetMemberTime || (mTime === targetMemberTime && m.Member_id < targetMemberId)) {
+                eligibleMap.set(addon.member_id, { id: m.Member_id, name: m.Name, phone: m.mobileno, time: mTime });
+              }
             }
           }
         }
@@ -493,7 +474,6 @@ const buyPackageDirectly = async (req, res) => {
       }
     }
     // ----------------------------------------------------------------------
-    */
 
     // 4. MLM Commissions - For Target Member's Sponsor
     try {

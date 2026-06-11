@@ -1,6 +1,7 @@
 const TransactionModel = require("../../../models/Transaction/Transaction");
 const MemberModel = require("../../../models/Users/Member");
-const AddOnRequestModel = require("../../../models/Packages/AddOnRequest");
+const AddOnPackageModel = require("../../../models/Packages/AddOnPackage");
+const CommissionModel = require("../../../models/commission.model");
 
 const getWalletOverview = async (req, res) => {
   try {
@@ -62,26 +63,28 @@ const getWalletOverview = async (req, res) => {
          tx.benefit_type?.toLowerCase().includes("level income")) &&
         !tx.transaction_type?.toLowerCase().includes("roi") &&
         !tx.description?.toLowerCase().includes("roi") &&
+        Number(tx.level) !== 1 &&
         tx.status === "Completed"
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     const roiLevelBenefits = nonLoanTransactions
       .filter(tx => 
         tx.transaction_type === "ROI Level Benefit" &&
         tx.status === "Completed"
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     const directBenefits = nonLoanTransactions
       .filter(tx =>
         (tx.transaction_type === "Direct Benefits" ||
           tx.description === "Direct Benefits" ||
           tx.transaction_type === "Direct benefits" ||
-          tx.description === "Direct benefits") &&
+          tx.description === "Direct benefits" ||
+          (tx.transaction_type?.toLowerCase().includes("level benefit") && Number(tx.level) === 1)) &&
         tx.status === "Completed"
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     // Repayment Commission calculation
     const repaymentCommission = nonLoanTransactions
@@ -104,7 +107,7 @@ const getWalletOverview = async (req, res) => {
         tx.transaction_type === "ROI Payout" &&
         tx.status === "Completed"
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     const singleLineIncome = nonLoanTransactions
       .filter(tx =>
@@ -124,8 +127,26 @@ const getWalletOverview = async (req, res) => {
     const totalLoanDebits = loanTransactions.reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0);
     const netLoanBalance = totalLoanCredits - totalLoanDebits;
 
-    const addonRequests = await AddOnRequestModel.find({ member_id: memberId, status: "APPROVED" });
-    const totalAddonAmount = addonRequests.reduce((acc, req) => acc + (req.requested_amount || 0), 0);
+    const addonPackages = await AddOnPackageModel.find({ member_id: memberId, request_id: { $ne: 'PRIMARY' } });
+    const totalAddonAmount = addonPackages.reduce((acc, pkg) => acc + (pkg.amount || 0), 0);
+
+    const singleLevelIncomeByPackage = {};
+    const sliTransactions = transactions.filter(tx =>
+      (tx.transaction_type === "Single Line Income" || tx.transaction_type === "Single Level Income" || tx.transaction_type === "Single Leg Income") &&
+      tx.status === "Completed"
+    );
+    
+    sliTransactions.forEach(tx => {
+      // Extract amount from description e.g., "Single Leg Income ($30) from U000002"
+      const match = tx.description?.match(/\(\$([\d.]+)\)/);
+      if (match && match[1]) {
+        const pkgVal = parseFloat(match[1]);
+        if (!singleLevelIncomeByPackage[pkgVal]) {
+          singleLevelIncomeByPackage[pkgVal] = 0;
+        }
+        singleLevelIncomeByPackage[pkgVal] += (parseFloat(tx.gross_amount) || parseFloat(tx.net_amount) || parseFloat(tx.ew_credit) || 0);
+      }
+    });
 
     return res.status(200).json({
       success: true,
@@ -138,11 +159,13 @@ const getWalletOverview = async (req, res) => {
         transactionsCount: nonLoanTransactions.length,
         availableForWithdrawal: Math.max(0, availableBalance).toFixed(2),
         levelBenefits: levelBenefits.toFixed(2),
+        roiBenefits: roiBenefits.toFixed(2),
         roiLevelBenefits: roiLevelBenefits.toFixed(2),
         directBenefits: directBenefits.toFixed(2),
         repaymentCommission: repaymentCommission.toFixed(2),
-        roiBenefits: roiBenefits.toFixed(2),
         singleLineIncome: singleLineIncome.toFixed(2),
+        singleLevelIncomeByPackage: singleLevelIncomeByPackage,
+        totalAddonAmount: totalAddonAmount.toFixed(2),
         totalBenefits: (levelBenefits + roiLevelBenefits + directBenefits + repaymentCommission + roiBenefits + singleLineIncome).toFixed(2),
         pendingWithdrawals: pendingWithdrawals.toFixed(2),
         primaryPackage: member.package_value || 0,
@@ -272,21 +295,22 @@ const getWalletWithdraw = async (req, res) => {
 
     const levelBenefits = completedTransactions
       .filter(tx =>
-        tx.transaction_type === "Level benefits" ||
+        (tx.transaction_type === "Level benefits" ||
         tx.description === "Level benefits" ||
         tx.transaction_type === "Level Benefits" ||
-        tx.description === "Level Benefits"
+        tx.description === "Level Benefits") && Number(tx.level) !== 1
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     const directBenefits = completedTransactions
       .filter(tx =>
         tx.transaction_type === "Direct Benefits" ||
         tx.description === "Direct Benefits" ||
         tx.transaction_type === "Direct benefits" ||
-        tx.description === "Direct benefits"
+        tx.description === "Direct benefits" ||
+        (tx.transaction_type?.toLowerCase().includes("level benefit") && Number(tx.level) === 1)
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
     const repaymentCommission = completedTransactions
       .filter(tx =>
         tx.transaction_type === "Repayment Commission" ||
@@ -294,13 +318,15 @@ const getWalletWithdraw = async (req, res) => {
         tx.transaction_type === "Repayment commission" ||
         tx.description === "Repayment commission"
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     const roiBenefits = completedTransactions
       .filter(tx =>
         tx.transaction_type === "ROI Payout"
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
+
+
 
     if (withdrawalAmount < 100) {
       return res.status(400).json({

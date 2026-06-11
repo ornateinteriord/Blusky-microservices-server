@@ -308,3 +308,22 @@ router.get("/matured-accounts", Authenticated, authorizeRole(["super_admin", "ad
 });
 
 module.exports = router;
+
+router.get('/check-m1', async (req, res) => {
+    try {
+        const MemberModel = require('../models/Users/Member');
+        const AddOnPackageModel = require('../models/Packages/AddOnPackage');
+        const m1 = await MemberModel.findOne({ Member_id: 'BMS000001' }).lean();
+        const m2 = await MemberModel.findOne({ Member_id: 'BMS000002' }).lean();
+        const m1_addons = await AddOnPackageModel.find({ member_id: 'BMS000001' }).lean();
+        res.json({
+            m1_package: m1.package_value,
+            m1_addons: m1_addons.map(a => a.amount),
+            m1_time: m1.createdAt,
+            m2_time: m2.createdAt
+        });
+    } catch(e) {
+        res.status(500).json({e: e.message});
+    }
+});
+

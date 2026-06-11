@@ -67,7 +67,8 @@ const io = new Server(server, {
         "https://mscs-beige.vercel.app",
         "https://biccsl.vercel.app",
         "https://www.bmsfoundation.biz",
-        "https://bmsfoundation.biz"
+        "https://bmsfoundation.biz",
+        "https://usdt-worl-club.vercel.app"
       ].filter(Boolean);
 
       if (isLocalhost || isNgrok || socketAllowedOrigins.includes(origin)) {
@@ -126,10 +127,7 @@ io.on("connection", (socket) => {
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   "https://sepctre-bms-ui.vercel.app",
-  "https://mscs-beige.vercel.app",
-  "https://biccsl.vercel.app",
-  "https://www.bmsfoundation.biz",
-  "https://bmsfoundation.biz"
+  "https://usdt-worl-club.vercel.app"
 ].filter(Boolean);
 
 app.use(

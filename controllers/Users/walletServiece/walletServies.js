@@ -108,10 +108,10 @@ const getWalletOverview = async (req, res) => {
 
     const singleLineIncome = nonLoanTransactions
       .filter(tx =>
-        (tx.transaction_type === "Single Line Income" || tx.transaction_type === "Single Level Income") &&
+        (tx.transaction_type === "Single Line Income" || tx.transaction_type === "Single Level Income" || tx.transaction_type === "Single Leg Income") &&
         tx.status === "Completed"
       )
-      .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+      .reduce((acc, tx) => acc + (parseFloat(tx.gross_amount) || parseFloat(tx.net_amount) || parseFloat(tx.ew_credit) || 0), 0);
 
 
     // Calculate loan amounts separately (for information only)

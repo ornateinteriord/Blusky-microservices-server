@@ -365,7 +365,7 @@ const buyPackageDirectly = async (req, res) => {
     });
     await deductionTx.save();
 
-    // 3. Create Package & Single Line Income Logic for Target Member
+    // 3. Create Package & Single Leg Income Logic for Target Member
     const request_id = `DIR${Date.now()}`; // Pseudo request ID for tracking
     
     // CASE A: Primary Package
@@ -387,34 +387,101 @@ const buyPackageDirectly = async (req, res) => {
       await newAddOn.save();
     }
 
-    // --- NEW: Single Line Income (1.5% cashback to the user themselves) ---
+    // --- NEW: Single Leg Income (1.5% cashback to the user themselves + up to 100 previous buyers of the same package) ---
     const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
     
     if (singleLineIncomeAmount > 0) {
-      const sliPayoutId = Date.now() + Math.floor(Math.random() * 1000);
+      // Split 50/50 between Earnings Wallet and Upgrade Wallet
+      const earningsAmount = Number((singleLineIncomeAmount / 2).toFixed(2));
+      const upgradeAmount = Number((singleLineIncomeAmount - earningsAmount).toFixed(2));
+
+      // 1. Give Single Leg Income to the target member who just bought the package
+      const sliPayoutIdTarget = Date.now() + Math.floor(Math.random() * 1000);
       
-      const sliTransaction = new TransactionModel({
+      const sliTransactionTarget = new TransactionModel({
         transaction_id: `SLI${Date.now()}${Math.floor(Math.random() * 1000)}`,
         transaction_date: new Date().toISOString(),
         member_id: finalTargetId,
         Name: targetMember.Name,
         mobileno: targetMember.mobileno,
-        description: `Single Line Income (1.5% of $${requested_amount})`,
-        transaction_type: "Single Level Income",
-        ew_credit: singleLineIncomeAmount.toString(),
+        description: `Single Leg Income Cashback ($${requested_amount})`,
+        transaction_type: "Single Leg Income",
+        ew_credit: earningsAmount.toString(),
+        uw_credit: upgradeAmount.toString(),
         ew_debit: "0",
         status: "Completed",
         net_amount: singleLineIncomeAmount,
         gross_amount: singleLineIncomeAmount
       });
-      
-      await sliTransaction.save();
+      await sliTransactionTarget.save();
 
-      // Credit Single Line Income to User's Wallet Balance
       await MemberModel.findOneAndUpdate(
         { Member_id: finalTargetId },
-        { $inc: { wallet_balance: singleLineIncomeAmount } }
+        { $inc: { wallet_balance: earningsAmount, upgrade_wallet: upgradeAmount } }
       );
+
+      // 2. Give Single Leg Income to up to 100 previous buyers of the exact same package
+      try {
+        // Find previous buyers of this exact package amount (handle both string and number types)
+        const primaryBuyers = await MemberModel.find({ 
+          package_value: { $in: [requested_amount, requested_amount.toString()] }, 
+          Member_id: { $ne: finalTargetId } 
+        }).select('Member_id Name mobileno createdAt').lean();
+        
+        const addonBuyers = await AddOnPackageModel.find({ 
+          amount: { $in: [requested_amount, requested_amount.toString()] }, 
+          member_id: { $ne: finalTargetId } 
+        }).select('member_id createdAt').lean();
+        
+        const eligibleMap = new Map(); // Use map to keep only unique members
+        
+        for (const buyer of primaryBuyers) {
+          if (!eligibleMap.has(buyer.Member_id)) {
+            eligibleMap.set(buyer.Member_id, { id: buyer.Member_id, name: buyer.Name, phone: buyer.mobileno, time: new Date(buyer.createdAt).getTime() });
+          }
+        }
+        
+        for (const addon of addonBuyers) {
+          if (!eligibleMap.has(addon.member_id)) {
+            const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Name mobileno').lean();
+            if (m) {
+              eligibleMap.set(addon.member_id, { id: m.Member_id, name: m.Name, phone: m.mobileno, time: new Date(addon.createdAt).getTime() });
+            }
+          }
+        }
+        
+        // Sort by time (oldest to newest) to find the chronological line, and take the 100 most recent ones before this user
+        let eligibleMembers = Array.from(eligibleMap.values());
+        eligibleMembers.sort((a, b) => a.time - b.time);
+        const finalEligibleMembers = eligibleMembers.slice(-100);
+
+        for (const member of finalEligibleMembers) {
+          const sliTransaction = new TransactionModel({
+            transaction_id: `SLI${Date.now()}${Math.floor(Math.random() * 1000)}`,
+            transaction_date: new Date().toISOString(),
+            member_id: member.id,
+            Name: member.name,
+            mobileno: member.phone,
+            description: `Single Leg Income ($${requested_amount}) from ${finalTargetId}`,
+            transaction_type: "Single Leg Income",
+            ew_credit: earningsAmount.toString(),
+            uw_credit: upgradeAmount.toString(),
+            ew_debit: "0",
+            status: "Completed",
+            net_amount: singleLineIncomeAmount,
+            gross_amount: singleLineIncomeAmount
+          });
+          
+          await sliTransaction.save();
+
+          await MemberModel.findOneAndUpdate(
+            { Member_id: member.id },
+            { $inc: { wallet_balance: earningsAmount, upgrade_wallet: upgradeAmount } }
+          );
+        }
+      } catch (err) {
+        console.error("Error distributing single leg income to previous buyers:", err);
+      }
     }
     // ----------------------------------------------------------------------
 

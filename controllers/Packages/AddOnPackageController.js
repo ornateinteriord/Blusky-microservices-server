@@ -387,6 +387,7 @@ const buyPackageDirectly = async (req, res) => {
       await newAddOn.save();
     }
 
+    /*
     // --- NEW: Single Leg Income (1.5% cashback to the user themselves + up to 100 previous buyers of the same package) ---
     const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
     
@@ -492,6 +493,7 @@ const buyPackageDirectly = async (req, res) => {
       }
     }
     // ----------------------------------------------------------------------
+    */
 
     // 4. MLM Commissions - For Target Member's Sponsor
     try {

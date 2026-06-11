@@ -433,6 +433,9 @@ const buyPackageDirectly = async (req, res) => {
           member_id: { $ne: finalTargetId } 
         }).select('member_id createdAt').lean();
         
+        console.log(`=== SINGLE LEG INCOME DISTRIBUTION START ===`);
+        console.log(`Buyer: ${finalTargetId}, Package Amount: $${requested_amount}`);
+        
         const eligibleMap = new Map(); // Use map to keep only unique members
         
         for (const buyer of primaryBuyers) {
@@ -443,7 +446,7 @@ const buyPackageDirectly = async (req, res) => {
         
         for (const addon of addonBuyers) {
           if (!eligibleMap.has(addon.member_id)) {
-            const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Name mobileno').lean();
+            const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Member_id Name mobileno').lean();
             if (m) {
               eligibleMap.set(addon.member_id, { id: m.Member_id, name: m.Name, phone: m.mobileno, time: new Date(addon.createdAt).getTime() });
             }
@@ -454,6 +457,11 @@ const buyPackageDirectly = async (req, res) => {
         let eligibleMembers = Array.from(eligibleMap.values());
         eligibleMembers.sort((a, b) => a.time - b.time);
         const finalEligibleMembers = eligibleMembers.slice(-100);
+
+        console.log(`Total Eligible Upline Users Found: ${finalEligibleMembers.length}`);
+        console.log(`Eligible Users List:`, finalEligibleMembers.map(m => m.id));
+        console.log(`Each user will receive: $${singleLineIncomeAmount}`);
+        console.log(`============================================`);
 
         for (const member of finalEligibleMembers) {
           const sliTransaction = new TransactionModel({

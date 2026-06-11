@@ -1,6 +1,7 @@
 const MemberModel = require("../../../models/Users/Member");
 const PayoutModel = require("../../../models/Payout/Payout");
 const TransactionModel = require("../../../models/Transaction/Transaction");
+const CommissionModel = require("../../../models/commission.model");
 
 const referralCommissionPercentages = {
   1: 20,
@@ -134,6 +135,8 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
             new_member_id: newMemberId,
             new_member_name: newMember.Name,
             amount: commissionAmount,
+            percentage: percentage,
+            packageValue: packageValue,
             payout_type: `${getOrdinal(upline.level)} Level Benefits (${pkgType})`,
             description: `Level ${upline.level} commission (${percentage}%) from member ${newMemberId}'s ${pkgType} package ($${packageValue})`,
             sponsor_status: upline.sponsor_status
@@ -213,6 +216,29 @@ const processCommissions = async (commissions, session = null) => {
           sponsor_name: sponsor.Name,
           sponsor_mobileno: sponsor.mobileno
         }, session);
+
+        // Create commission record
+        const commissionRecord = new CommissionModel({
+          commission_id: `COM-${payoutId}`,
+          beneficiary_id: commission.sponsor_id,
+          beneficiary_name: sponsor.Name || commission.sponsor_name,
+          beneficiary_type: "MEMBER",
+          source_id: commission.new_member_id,
+          source_name: commission.new_member_name,
+          source_type: "MEMBER",
+          transaction_id: transaction.transaction_id,
+          transaction_date: new Date(),
+          account_type: commission.payout_type,
+          account_type_id: "MLM_LEVEL_INCOME",
+          transaction_amount: commission.packageValue || 0,
+          commission_rate: commission.percentage || 0,
+          commission_amount: commission.amount,
+          level: commission.level,
+          status: "CREDITED",
+          credited_at: new Date()
+        });
+        
+        await commissionRecord.save({ session });
 
         results.push({
           success: true,
@@ -298,16 +324,10 @@ const updateSponsorReferrals = async (sponsorId, newMemberId) => {
       console.error(`Sponsor not found: ${sponsorId}`);
       return;
     }
-    let directReferrals = sponsor.direct_referrals || [];
-
-    if (!directReferrals.includes(newMemberId)) {
-      directReferrals.push(newMemberId);
-    }
-
     await MemberModel.findOneAndUpdate(
       { Member_id: sponsorId },
       {
-        direct_referrals: directReferrals,
+        $addToSet: { direct_referrals: newMemberId },
         $inc: { total_team: 1 }
       }
     );

@@ -7,6 +7,7 @@ const {
 const { generateOTP, storeOTP, verifyOTP } = require("../../utils/OtpService");
 const { generateMSCSEmail } = require("../../utils/generateMSCSEmail");
 const { updateSponsorReferrals } = require("../../controllers/Users/mlmService/mlmService");
+const { addMemberHierarchy } = require("../../utils/hierarchyHelper");
 const path = require("path");
 
 const recoverySubject = "BMS Foundation - Password Recovery";
@@ -14,23 +15,23 @@ const resetPasswordSubject = "BMS Foundation - OTP Verification";
 
 const generateUniqueMemberId = async () => {
   let newNumber = 1;
-  // Get the most recently created member with a BMS ID
-  const lastMember = await MemberModel.findOne({ Member_id: /^BMS/ }).sort({ _id: -1 });
+  // Get the most recently created member with a U ID
+  const lastMember = await MemberModel.findOne({ Member_id: /^U/ }).sort({ _id: -1 });
 
   if (lastMember && lastMember.Member_id) {
-    const lastNumberStr = lastMember.Member_id.replace('BMS', '');
+    const lastNumberStr = lastMember.Member_id.replace('U', '');
     const lastNumber = parseInt(lastNumberStr, 10);
     if (!isNaN(lastNumber)) {
       newNumber = lastNumber + 1;
     }
   }
 
-  let finalId = `BMS${String(newNumber).padStart(6, '0')}`;
+  let finalId = `U${String(newNumber).padStart(6, '0')}`;
 
   // Guarantee uniqueness
   while (await MemberModel.exists({ Member_id: finalId })) {
     newNumber++;
-    finalId = `BMS${String(newNumber).padStart(6, '0')}`;
+    finalId = `U${String(newNumber).padStart(6, '0')}`;
   }
 
   return finalId;
@@ -55,7 +56,7 @@ const signup = async (req, res) => {
       }
     }
 
-    const newMember = new MemberModel({
+    let memberData = {
       Member_id: memberId,
       email,
       password,
@@ -65,9 +66,17 @@ const signup = async (req, res) => {
       sponsor_id: sponsorId || null,
       Sponsor_code: sponsorId || null,
       Sponsor_name: sponsor ? sponsor.Name : null,
+      
+      introducer: sponsorId || null,
+      introducer_name: sponsor ? sponsor.Name : null,
 
       ...otherDetails,
-    });
+    };
+
+    // Automatically build introducer hierarchy
+    memberData = await addMemberHierarchy(memberData);
+
+    const newMember = new MemberModel(memberData);
     await newMember.save();
 
     // If a sponsor was provided, add this member to the sponsor's direct referrals

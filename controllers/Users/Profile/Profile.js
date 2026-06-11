@@ -117,15 +117,15 @@ const activateMemberPackage = async (req, res) => {
       return res.status(404).json({ success: false, message: "Member not found" });
     }
 
-    // Dynamically accept any BMS Plan amount or "NONE"
+    // Dynamically accept any USDT Plan amount or "NONE"
     let selectedPackage = null;
     if (packageType === "NONE") {
       selectedPackage = { name: "NONE", value: 0 };
-    } else if (packageType && packageType.startsWith("BMS_")) {
-      const amtStr = packageType.replace("BMS_", "");
+    } else if (packageType && packageType.startsWith("USDT_")) {
+      const amtStr = packageType.replace("USDT_", "");
       const amt = Number(amtStr);
       if (!isNaN(amt) && amt > 0) {
-        selectedPackage = { name: "BMS Plan", value: amt };
+        selectedPackage = { name: "USDT Plan", value: amt };
       }
     }
 
@@ -164,7 +164,7 @@ const activateMemberPackage = async (req, res) => {
       { Member_id: memberId },
       {
         status: "active",
-        spackage: "BMS Plan",
+        spackage: "USDT Plan",
         package_value: amount,
         upgrade_status: "Active", // Activated with package
         Date_of_joining: activationDate,

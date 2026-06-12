@@ -183,6 +183,7 @@ const getWalletOverview = async (req, res) => {
           outstandingLoan: Math.max(0, netLoanBalance).toFixed(2),
           loanTransactionsCount: loanTransactions.length
         },
+        transactions: nonLoanTransactions.sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date)),
         calculation: {
           formula: "Available Balance = Sum of All Credits - Sum of All Debits (excluding loan and top-up transactions)",
           breakdown: `$${completedAndPendingTx.reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0).toFixed(2)} - $${completedAndPendingTx.reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0).toFixed(2)} = $${Math.max(0, availableBalance).toFixed(2)}`,

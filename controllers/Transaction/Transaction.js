@@ -26,9 +26,25 @@ const getTransactionDetails = async (req, res) => {
     const transactions = await TransactionModel.aggregate([
       { $match: query },
       {
+        $addFields: {
+          extracted_related_id: {
+            $cond: {
+              if: { $and: [
+                { $ne: ["$description", null] },
+                { $regexMatch: { input: { $ifNull: ["$description", ""] }, regex: /from U\w+/i } }
+              ]},
+              then: {
+                $trim: { input: { $arrayElemAt: [{ $split: ["$description", "from "] }, 1] } }
+              },
+              else: "$related_member_id"
+            }
+          }
+        }
+      },
+      {
         $lookup: {
           from: "member_tbl",
-          localField: "related_member_id",
+          localField: "extracted_related_id",
           foreignField: "Member_id",
           as: "related_member"
         }
@@ -40,12 +56,19 @@ const getTransactionDetails = async (req, res) => {
               "$related_member_name",
               { $arrayElemAt: ["$related_member.Name", 0] }
             ]
+          },
+          related_member_id: {
+            $ifNull: [
+              "$related_member_id",
+              "$extracted_related_id"
+            ]
           }
         }
       },
       {
         $project: {
-          related_member: 0
+          related_member: 0,
+          extracted_related_id: 0
         }
       },
       { $sort: { createdAt: -1 } } // Sort by date descending

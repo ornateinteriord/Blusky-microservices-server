@@ -64,12 +64,16 @@ const getMemberDetails = async (req, res) => {
 
     // For regular members - get actual registration counts from database
     const directCount = await MemberModel.countDocuments({
-      referred_by: foundUser.Member_id
+      $or: [
+        { introducer: foundUser.Member_id },
+        { sponsor_id: foundUser.Member_id },
+        { Sponsor_code: foundUser.Member_id }
+      ]
     });
 
     const totalTeamCount = await MemberModel.countDocuments({
       $or: [
-        { referred_by: foundUser.Member_id },
+        { introducer_hierarchy: foundUser.Member_id },
         { referral_path: { $regex: foundUser.Member_id, $options: 'i' } }
       ]
     });

@@ -12,6 +12,7 @@ const TransactionSchema = new mongoose.Schema(
     ew_credit: { type: String },
     ew_debit: { type: String },
     uw_credit: { type: String },
+    uw_debit: { type: String },
     status: {
       type: String,
       enum: {

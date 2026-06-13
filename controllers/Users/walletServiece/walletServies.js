@@ -329,11 +329,11 @@ const getWalletWithdraw = async (req, res) => {
 
 
 
-    if (withdrawalAmount < 100) {
+    if (withdrawalAmount < 5) {
       return res.status(400).json({
         success: false,
-        message: "Minimum withdrawal amount is $100",
-        minimum: 100,
+        message: "Minimum withdrawal amount is $5",
+        minimum: 5,
         loanStatus: {
           hasUnpaidLoan: hasUnpaidLoan,
           isWithdrawalAllowed: !hasUnpaidLoan,

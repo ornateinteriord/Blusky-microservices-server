@@ -256,11 +256,11 @@ const getDailyPayout = async (req, res) => {
       query = { member_id: member_id };
     }
 
-    // Filter strictly for ROI payouts as requested
+    // Filter strictly for Single Level Income payouts as requested
     const transactions = await TransactionModel.find({
       ...query,
-      transaction_type: "ROI Payout",
-    }).sort({ transaction_date: -1 }); // Show latest ROI first
+      transaction_type: { $in: ["Single Level Income", "Single Leg Income", "Single Line Income"] },
+    }).sort({ transaction_date: -1 }); // Show latest first
 
     return res.status(200).json({
       success: true,

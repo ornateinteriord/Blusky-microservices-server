@@ -20,7 +20,11 @@ const getTransactionDetails = async (req, res) => {
     }
 
     if (type && type !== "all") {
-      query.account_type = type;
+      if (type === "Withdrawal") {
+        query.transaction_type = "Withdrawal";
+      } else {
+        query.account_type = type;
+      }
     }
 
     const transactions = await TransactionModel.aggregate([

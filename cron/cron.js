@@ -1,5 +1,6 @@
 const cron = require("node-cron");
 const { processDailyROI } = require("../controllers/Users/roiService/roiService");
+const { processAutoUpgrades } = require("../controllers/Packages/autoUpgradeService");
 
 /**
  * Initialize all cron jobs for the application
@@ -21,7 +22,22 @@ const initCronJobs = () => {
 
     console.log("📅 [CRON] Scheduler initialized: Daily ROI at 12:00 AM (Asia/Kolkata).");
 
-    // 2. Immediate check on startup (Catch-up logic)
+    // 2. Auto Upgrade Wallet Check at 01:00 AM every day (Asia/Kolkata)
+    cron.schedule("00 01 * * *", async () => {
+        console.log("⏰ [CRON] Triggering Auto Upgrade Wallet Process at 01:00 AM IST...");
+        try {
+            const result = await processAutoUpgrades();
+            console.log("✅ [CRON] Auto Upgrade Wallet Process completed:", result);
+        } catch (error) {
+            console.error("❌ [CRON] Error in Auto Upgrade Wallet Process:", error.message);
+        }
+    }, {
+        timezone: "Asia/Kolkata"
+    });
+
+    console.log("📅 [CRON] Scheduler initialized: Auto Upgrade Wallet at 01:00 AM (Asia/Kolkata).");
+
+    // 3. Immediate check on startup (Catch-up logic)
     // Ensures missed days are processed if the server was offline.
     setTimeout(async () => {
         console.log("⏰ [CRON] Running Startup ROI Check (Fail-Safe Catch-up)...");

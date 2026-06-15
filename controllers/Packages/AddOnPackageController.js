@@ -231,6 +231,13 @@ const evaluateRequest = async (req, res) => {
           reference_no: request.request_id
         });
         await topUpTransaction.save();
+
+        // Increment the Top Up Wallet balance in the Member table
+        await MemberModel.findOneAndUpdate(
+          { Member_id: request.member_id },
+          { $inc: { top_up_wallet: Number(request.requested_amount) } }
+        );
+
         console.log(`✅ Top Up Wallet credited: $${request.requested_amount} for ${request.member_id}`);
       } catch (topUpErr) {
         console.error(`❌ Top Up transaction creation failed for ${request_id}:`, topUpErr.message);
@@ -365,6 +372,12 @@ const buyPackageDirectly = async (req, res) => {
     });
     await deductionTx.save();
 
+    // Deduct the Top Up Wallet balance in the Member table
+    await MemberModel.findOneAndUpdate(
+      { Member_id: member_id },
+      { $inc: { top_up_wallet: -Number(requested_amount) } }
+    );
+
     // 3. Create Package & Single Leg Income Logic for Target Member
     const request_id = `DIR${Date.now()}`; // Pseudo request ID for tracking
     
@@ -386,6 +399,14 @@ const buyPackageDirectly = async (req, res) => {
       });
       await newAddOn.save();
     }
+
+      // GLOBAL INCOME TRIGGER COMMENTED OUT PER USER REQUEST
+      // try {
+      //   const { distributeGlobalIncome } = require("./globalIncomeService");
+      //   await distributeGlobalIncome(finalTargetId, requested_amount);
+      // } catch (globalIncomeErr) {
+      //   console.error("Global income distribution failed:", globalIncomeErr);
+      // }
     // --- NEW: Single Leg Income (1.5% cashback to the user themselves + up to 100 previous buyers of the same package) ---
     const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
     

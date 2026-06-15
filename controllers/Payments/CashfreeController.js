@@ -804,6 +804,14 @@ exports.handleWebhook = async (req, res) => {
             console.log(`✅ Member ${member.Member_id} status updated from Pending to active`);
             if (packageUpdated) {
               console.log(`📦 Member package updated to ${member.spackage} (${member.package_value})`);
+              
+              // --- NEW: Global Income (Autopool) Distribution ---
+              // try {
+              //   const { distributeGlobalIncome } = require("../Packages/globalIncomeService");
+              //   await distributeGlobalIncome(member.Member_id, member.package_value);
+              // } catch (globalIncomeErr) {
+              //   console.error("Global income distribution failed in cashfree webhook:", globalIncomeErr);
+              // }
             }
 
             // Update referral hierarchy now that member is active

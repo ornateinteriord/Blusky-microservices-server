@@ -12,7 +12,7 @@ const { createTicket, getTickets } = require("../controllers/Users/Ticket/Ticket
 const Authenticated = require("../middlewares/auth");
 const {  triggerMLMCommissions, getMemberCommissionSummary, getDailyPayout, climeRewardLoan, repaymentLoan, getROIBenefits, triggerUserROI } = require("../controllers/Users/Payout/PayoutController");
 const { getPendingTransactions, approveWithdrawal } = require("../controllers/Users/payoutPending/pendingTransactions");
-const { getWalletOverview, getWalletWithdraw } = require("../controllers/Users/walletServiece/walletServies");
+const { getWalletOverview, getWalletWithdraw, transferWallet } = require("../controllers/Users/walletServiece/walletServies");
 const { getUplineTree } = require("../controllers/Users/mlmService/mlmService");
 // const { createOrder, getOrderStatus, webhook } = require("../controllers/Payments/CashfreeController");
 
@@ -51,6 +51,7 @@ router.get("/mlm/upline-tree/:member_id", getUplineTree);
 
 router.get("/overview/:memberId", Authenticated, getWalletOverview);
 router.post("/withdraw/:memberId", Authenticated, getWalletWithdraw);
+router.post("/transfer-wallet", Authenticated, transferWallet);
 router.put('/approve-withdrawal/:transaction_id', Authenticated, approveWithdrawal);
 
 

@@ -484,4 +484,124 @@ const getWalletWithdraw = async (req, res) => {
 };
 
 
-module.exports = { getWalletOverview, getWalletWithdraw };
+const transferWallet = async (req, res) => {
+  try {
+    const { memberId, fromWallet, toWallet, amount } = req.body;
+
+    if (!memberId || !fromWallet || !toWallet || !amount) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
+    }
+
+    const transferAmount = parseFloat(amount);
+    if (isNaN(transferAmount) || transferAmount <= 0) {
+      return res.status(400).json({ success: false, message: "Invalid transfer amount" });
+    }
+
+    if (fromWallet === "Earnings" && toWallet !== "Top Up Wallet") {
+       return res.status(400).json({ success: false, message: "Earnings can only be transferred to Top Up Wallet" });
+    }
+    if (fromWallet === "Top Up" && toWallet !== "Upgrade Wallet") {
+       return res.status(400).json({ success: false, message: "Top Up can only be transferred to Upgrade Wallet" });
+    }
+
+    const member = await MemberModel.findOne({ Member_id: memberId });
+    if (!member) {
+      return res.status(404).json({ success: false, message: "Member not found" });
+    }
+
+    let currentBalance = 0;
+    if (fromWallet === "Earnings") {
+       currentBalance = member.wallet_balance || 0;
+    } else if (fromWallet === "Top Up") {
+       const transactions = await TransactionModel.find({ member_id: memberId });
+       const topUpTransactions = transactions.filter(tx => tx.transaction_type === 'Top up');
+       const topUpCredits = topUpTransactions
+         .filter(tx => tx.status === 'Completed' || tx.status === 'Approved')
+         .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
+       const topUpDebits = topUpTransactions
+         .filter(tx => tx.status === 'Completed' || tx.status === 'Approved')
+         .reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0);
+       currentBalance = Math.max(0, topUpCredits - topUpDebits);
+    } else {
+       return res.status(400).json({ success: false, message: "Invalid source wallet" });
+    }
+
+    if (transferAmount > currentBalance) {
+      return res.status(400).json({ success: false, message: "Insufficient balance in " + fromWallet });
+    }
+
+    const lastTransaction = await TransactionModel.findOne({}).sort({ createdAt: -1 }).exec();
+    let newTxId = 1;
+    if (lastTransaction && lastTransaction.transaction_id) {
+      const lastIdNum = parseInt(lastTransaction.transaction_id.replace(/\D/g, ""), 10) || 0;
+      newTxId = lastIdNum + 1;
+    }
+
+    if (fromWallet === "Earnings" && toWallet === "Top Up Wallet") {
+      // Create two transactions: one to debit earnings, one to credit top up
+      const debitTx = new TransactionModel({
+        transaction_id: newTxId.toString(),
+        transaction_date: new Date(),
+        member_id: memberId,
+        description: `Wallet Transfer: Earnings to Top Up Wallet`,
+        transaction_type: "Wallet Transfer",
+        ew_credit: 0,
+        ew_debit: transferAmount,
+        uw_credit: 0,
+        uw_debit: 0,
+        status: "Completed",
+        net_amount: transferAmount,
+        gross_amount: transferAmount
+      });
+      await debitTx.save();
+
+      const creditTx = new TransactionModel({
+        transaction_id: (newTxId + 1).toString(),
+        transaction_date: new Date(),
+        member_id: memberId,
+        description: `Wallet Transfer: Received from Earnings`,
+        transaction_type: "Top up",
+        ew_credit: transferAmount,
+        ew_debit: 0,
+        uw_credit: 0,
+        uw_debit: 0,
+        status: "Completed",
+        net_amount: transferAmount,
+        gross_amount: transferAmount
+      });
+      await creditTx.save();
+
+      await MemberModel.findOneAndUpdate({ Member_id: memberId }, { 
+        $inc: { wallet_balance: -transferAmount, top_up_wallet: transferAmount } 
+      });
+
+    } else if (fromWallet === "Top Up" && toWallet === "Upgrade Wallet") {
+      const tx = new TransactionModel({
+        transaction_id: newTxId.toString(),
+        transaction_date: new Date(),
+        member_id: memberId,
+        description: `Wallet Transfer: Top Up to Upgrade Wallet`,
+        transaction_type: "Top up", // Mark as top up so it counts as top up debit
+        ew_credit: 0,
+        ew_debit: transferAmount, 
+        uw_credit: transferAmount,
+        uw_debit: 0,
+        status: "Completed",
+        net_amount: transferAmount,
+        gross_amount: transferAmount
+      });
+      await tx.save();
+
+      await MemberModel.findOneAndUpdate({ Member_id: memberId }, { 
+        $inc: { top_up_wallet: -transferAmount, upgrade_wallet: transferAmount } 
+      });
+    }
+
+    return res.status(200).json({ success: true, message: "Transfer successful" });
+  } catch (error) {
+    console.error("Error in transferWallet:", error);
+    return res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
+
+module.exports = { getWalletOverview, getWalletWithdraw, transferWallet };

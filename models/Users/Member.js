@@ -82,6 +82,7 @@ const MemberSchema = new mongoose.Schema(
     },
     wallet_balance: { type: Number, default: 0 },
     upgrade_wallet: { type: Number, default: 0 },
+    top_up_wallet: { type: Number, default: 0 },
 
     // NIDHI SPECIFIC FIELDS (Lowercase mappings)
     member_id: { type: String }, // Counterpart to Member_id

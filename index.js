@@ -67,6 +67,7 @@ const io = new Server(server, {
         "https://mscs-beige.vercel.app",
         "https://biccsl.vercel.app",
         "https://www.bmsfoundation.biz",
+        "https://www.usdtworld.club",
         "https://usdtworld.club",
         "https://bmsfoundation.biz",
         "https://usdt-worl-club.vercel.app",

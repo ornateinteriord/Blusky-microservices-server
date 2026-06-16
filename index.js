@@ -134,7 +134,9 @@ const allowedOrigins = [
   "https://biccsl.vercel.app",
   "https://www.bmsfoundation.biz",
   "https://bmsfoundation.biz",
-  "https://usdt-worl-club.vercel.app"
+  "https://usdt-worl-club.vercel.app",
+  "https://www.usdtworld.club",
+   "https://usdtworld.club",
 ].filter(Boolean);
 
 app.use(

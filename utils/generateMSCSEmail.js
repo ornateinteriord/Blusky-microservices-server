@@ -1,39 +1,88 @@
 const generateMSCSEmail = (memberId, password, name = 'Member') => {
-  const welcomeSubject = 'BMSF - Account Registration Successful';
-  
+  const welcomeSubject = 'USDT - Account Registration Successful';
+
   const welcomeMessage = `
-    <div style="font-family: Arial, sans-serif; padding: 10px; line-height: 1.6; margin-bottom: 100px; max-width: 700px; margin: 0 auto;">
-  
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
+      <!-- Logo Header -->
+      <div style="text-align: center; margin-bottom: 0px;">
+        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
+      </div>
+      
       <!-- Content -->
-      <div style="padding: 20px; background: #ffffff; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 8px 8px;">
-        <p style="color: #374151; margin-bottom: 20px;">
-          Dear <strong style="color: #7e22ce;">${name}</strong>,
+      <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Welcome to USDT World Club!</h2>
+        
+        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+          Dear <strong style="color: #fbbf24;">${name}</strong>,
         </p>
 
-        <p style="color: #374151; margin-bottom: 20px;">
-          Your account registration with <strong>BMS Foundation ltd</strong> has been successfully completed.
+        <p style="color: #ffffff; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+          Congratulations! Your account registration has been successfully completed. We are thrilled to welcome you to the community.
         </p>
 
         <!-- Credentials Box -->
-        <div style="background: #f8f7ff; border-left: 4px solid #7e22ce; padding: 20px; margin: 25px 0; border-radius: 4px;">
-          <h3 style="color: #581c87; margin-top: 0; margin-bottom: 15px;">Your Login Credentials:</h3>
-          <p style="margin: 8px 0;"><strong style="color: #7e22ce;">Username:</strong> ${memberId}</p>
-          <p style="margin: 8px 0;"><strong style="color: #7e22ce;">Password:</strong> ${password}</p>
+        <div style="background-color: #374151; border-left: 4px solid #fbbf24; padding: 20px; margin: 25px 0; border-radius: 4px;">
+          <h3 style="color: #fbbf24; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Your Login Credentials</h3>
+          <p style="margin: 8px 0; color: #d1d5db; font-size: 15px;"><strong>Member ID:</strong> <span style="color: #ffffff;">${memberId}</span></p>
+          <p style="margin: 8px 0; color: #d1d5db; font-size: 15px;"><strong>Password:</strong> <span style="color: #ffffff;">${password}</span></p>
         </div>
 
-        <p style="color: #374151; margin-bottom: 25px;">
-          Please keep your login credentials secure and do not share them with anyone.
+        <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+          <strong>Security Notice:</strong> Please keep your login credentials strictly confidential and do not share them with anyone.
         </p>
+      </div>
 
-        <!-- Footer -->
-        <div style="border-top: 2px solid #f3f4f6; padding-top: 25px; margin-top: 25px;">
-          <p style="color: #6b7280; margin-bottom: 5px;">Best regards,</p>
-          <p style="color: #7e22ce; font-weight: bold; margin: 0;">BMS Foundation Team</p>
-        </div>
+      <!-- Footer -->
+      <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
+        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
       </div>
     </div>
   `;
-  
+
   return { welcomeMessage, welcomeSubject };
 };
-module.exports = { generateMSCSEmail };
+
+const generateTopUpApprovedEmail = (name, amount) => {
+  const subject = 'USDT World Club - Fund Load Approved';
+
+  const htmlContent = `
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
+      <!-- Logo Header -->
+      <div style="text-align: center; margin-bottom: 0px;">
+        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
+      </div>
+      
+      <!-- Content -->
+      <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Fund Load Approved</h2>
+        
+        <p style="color: #ffffff; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
+          Dear <strong style="color: #fbbf24;">${name}</strong>,
+        </p>
+
+        <p style="color: #ffffff; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
+          Your request to load funds into your Top Up Wallet has been approved by the Administrator.
+        </p>
+
+        <div style="background-color: #374151; border-left: 4px solid #10b981; padding: 20px; margin: 25px 0; border-radius: 4px;">
+          <h3 style="color: #10b981; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Transaction Details</h3>
+          <p style="margin: 8px 0; color: #d1d5db; font-size: 15px;"><strong>Status:</strong> <span style="color: #ffffff;">Approved</span></p>
+          <p style="margin: 8px 0; color: #d1d5db; font-size: 15px;"><strong>Credited Amount:</strong> <span style="color: #ffffff;">$${amount}</span></p>
+        </div>
+
+        <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
+          The requested amount has been successfully added to your Top Up Wallet. You can now use these funds for upgrading packages or internal transfers.
+        </p>
+      </div>
+
+      <!-- Footer -->
+      <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
+        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  return { htmlContent, subject };
+};
+
+module.exports = { generateMSCSEmail, generateTopUpApprovedEmail };

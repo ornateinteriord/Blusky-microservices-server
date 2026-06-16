@@ -95,11 +95,16 @@ const signup = async (req, res) => {
 
       const textContent = `Dear ${Name}, Your account registration with BMS Foundation has been completed. Member ID: ${memberId}, Password: ${password}. Your account is under verification process.`;
 
+      const attachments = [{
+        filename: 'USDT.png',
+        path: path.join(__dirname, '../../utils/USDT.png'),
+        cid: 'bmslogo'
+      }];
 
-      await sendMail(email, welcomeSubject, welcomeMessage, textContent);
+      await sendMail(email, welcomeSubject, welcomeMessage, textContent, attachments);
 
     } catch (emailError) {
-
+      console.error("Error sending welcome email:", emailError);
     }
 
     res.status(201).json({
@@ -204,32 +209,32 @@ const resetPassword = async (req, res) => {
     }
     const newOtp = generateOTP();
 
-    const textContent = `Dear Member,\n\nYour OTP for password reset is: ${newOtp}\n\nPlease use this OTP to proceed with resetting your password.\n\nPlease don't share this OTP with anyone.\n\nBest regards,\nBMS Foundation Team`;
+    const textContent = `Dear Member,\n\nYour OTP for password reset is: ${newOtp}\n\nPlease use this OTP to proceed with resetting your password.\n\nPlease don't share this OTP with anyone.\n\nBest regards,\nUSDT World Club Team`;
 
     const htmlContent = `
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <img src="cid:bmslogo" alt="BMS Foundation Logo" style="max-width: 180px; height: auto;" />
+    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
+      <div style="text-align: center; margin-bottom: 0px;">
+        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
       </div>
-      <div style="background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);">
-        <h2 style="color: #0f172a; margin-top: 0; text-align: center; font-size: 24px;">Password Reset Request</h2>
-        <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Dear Member,</p>
-        <p style="color: #475569; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">We received a request to reset the password for your account. Please use the following One-Time Password (OTP) to complete the process:</p>
+      <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
+        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Password Reset Request</h2>
+        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Dear Member,</p>
+        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">We received a request to reset the password for your account. Please use the following One-Time Password (OTP) to complete the process:</p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <span style="font-size: 32px; font-weight: 800; color: #1e3a8a; letter-spacing: 4px; padding: 15px 30px; background-color: #eff6ff; border-radius: 8px; border: 2px dashed #bfdbfe; display: inline-block;">${newOtp}</span>
+          <span style="font-size: 32px; font-weight: 800; color: #fbbf24; letter-spacing: 4px; padding: 15px 30px; background-color: #374151; border-radius: 8px; border: 2px dashed #fbbf24; display: inline-block;">${newOtp}</span>
         </div>
         
-        <p style="color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 10px;"><strong>Security Notice:</strong> Please do not share this code with anyone. This OTP is valid for a limited time.</p>
+        <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 10px;"><strong>Security Notice:</strong> Please do not share this code with anyone. This OTP is valid for a limited time.</p>
       </div>
-      <div style="text-align: center; margin-top: 25px; color: #94a3b8; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} BMS Foundation. All rights reserved.
+      <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
+        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
       </div>
     </div>`;
 
     const attachments = [{
-      filename: 'bms_logo.png',
-      path: path.join(__dirname, '../../utils/bms_logo.png'),
+      filename: 'USDT.png',
+      path: path.join(__dirname, '../../utils/USDT.png'),
       cid: 'bmslogo'
     }];
 

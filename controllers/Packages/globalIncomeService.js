@@ -34,18 +34,21 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
 
     console.log(`[GlobalIncome] Member ${memberId} added to queue for $${amount} at index ${newQueueIndex}`);
 
-    // Intervals: 150th, 300th, 450th, 600th, 750th relative purchase.
+    // Intervals: 125th, 150th, 175th, 200th, 225th, 250th, 275th relative purchase.
     // That means the difference between current index and beneficiary index is interval - 1.
-    // e.g. 150 - 1 = 149, 300 - 1 = 299...
     const payoutIntervals = [
-      { diff: 149, payoutNum: 1 },
-      { diff: 299, payoutNum: 2 },
-      { diff: 449, payoutNum: 3 },
-      { diff: 599, payoutNum: 4 },
-      { diff: 749, payoutNum: 5 }
+      { diff: 124, payoutNum: 1 },
+      { diff: 149, payoutNum: 2 },
+      { diff: 174, payoutNum: 3 },
+      { diff: 199, payoutNum: 4 },
+      { diff: 224, payoutNum: 5 },
+      { diff: 249, payoutNum: 6 },
+      { diff: 274, payoutNum: 7 }
     ];
 
-    const payoutAmount = amount * 0.12; // 12% of the package amount
+    const totalPayoutAmount = amount * 0.50; // 50% of the package amount
+    const ewCredit = Number((totalPayoutAmount / 2).toFixed(2));
+    const uwCredit = Number((totalPayoutAmount - ewCredit).toFixed(2));
 
     for (const interval of payoutIntervals) {
       const targetQueueIndex = newQueueIndex - interval.diff;
@@ -60,10 +63,16 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
         if (beneficiaryEntry && beneficiaryEntry.member_id) {
           const beneficiaryId = beneficiaryEntry.member_id;
 
-          // Add balance to beneficiary's earnings wallet
+          // Add balance to beneficiary's earnings wallet and upgrade wallet
           await MemberModel.findOneAndUpdate(
             { Member_id: beneficiaryId },
-            { $inc: { wallet_balance: payoutAmount } }
+            { 
+              $inc: { 
+                wallet_balance: ewCredit,
+                upgrade_wallet_balance: uwCredit,
+                global_income: totalPayoutAmount
+              } 
+            }
           );
 
           // Generate a fast random txId to prevent DB bottlenecks
@@ -74,20 +83,20 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
             transaction_id: txId,
             transaction_date: new Date(),
             member_id: beneficiaryId,
-            description: `Global Income ($${amount}) from ${memberId} (Payout ${interval.payoutNum}/5)`,
+            description: `Global Income ($${amount}) from ${memberId} (Payout ${interval.payoutNum}/7)`,
             transaction_type: "Global Income",
-            ew_credit: payoutAmount,
+            ew_credit: ewCredit,
             ew_debit: 0,
-            uw_credit: 0,
+            uw_credit: uwCredit,
             uw_debit: 0,
             status: "Completed",
-            net_amount: payoutAmount,
-            gross_amount: payoutAmount
+            net_amount: totalPayoutAmount,
+            gross_amount: totalPayoutAmount
           });
           
           await transaction.save();
 
-          console.log(`[GlobalIncome] Paid $${payoutAmount} to ${beneficiaryId} for $${amount} package (Payout ${interval.payoutNum}/5)`);
+          console.log(`[GlobalIncome] Paid $${totalPayoutAmount} to ${beneficiaryId} for $${amount} package (Payout ${interval.payoutNum}/7)`);
         }
       }
     }

@@ -12,7 +12,7 @@ const { createTicket, getTickets } = require("../controllers/Users/Ticket/Ticket
 const Authenticated = require("../middlewares/auth");
 const {  triggerMLMCommissions, getMemberCommissionSummary, getDailyPayout, climeRewardLoan, repaymentLoan, getROIBenefits, triggerUserROI } = require("../controllers/Users/Payout/PayoutController");
 const { getPendingTransactions, approveWithdrawal } = require("../controllers/Users/payoutPending/pendingTransactions");
-const { getWalletOverview, getWalletWithdraw, transferWallet } = require("../controllers/Users/walletServiece/walletServies");
+const { getWalletOverview, getWalletWithdraw, transferWallet, sendTransferOTP, sendWithdrawalOTP } = require("../controllers/Users/walletServiece/walletServies");
 const { getUplineTree } = require("../controllers/Users/mlmService/mlmService");
 // const { createOrder, getOrderStatus, webhook } = require("../controllers/Payments/CashfreeController");
 
@@ -51,7 +51,9 @@ router.get("/mlm/upline-tree/:member_id", getUplineTree);
 
 router.get("/overview/:memberId", Authenticated, getWalletOverview);
 router.post("/withdraw/:memberId", Authenticated, getWalletWithdraw);
+router.post("/withdraw/send-otp/:memberId", Authenticated, sendWithdrawalOTP);
 router.post("/transfer-wallet", Authenticated, transferWallet);
+router.post("/transfer-wallet/send-otp", Authenticated, sendTransferOTP);
 router.put('/approve-withdrawal/:transaction_id', Authenticated, approveWithdrawal);
 
 

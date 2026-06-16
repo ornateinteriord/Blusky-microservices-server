@@ -10,9 +10,8 @@ const TransactionModel = require("../../models/Transaction/Transaction");
 const moment = require("moment");
 const ReceiptsModel = require("../../models/receipts.model");
 const generateTransactionId = require("../../utils/generateTransactionId");
-
-
-// User requests a new addon package layer
+const { sendMail } = require("../../utils/EmailService");
+const { generateTopUpApprovedEmail } = require("../../utils/generateMSCSEmail");// User requests a new addon package layer
 const requestAddOn = async (req, res) => {
   try {
     const { member_id, requested_amount, tx_no, screenshot_url, payment_method } = req.body;
@@ -239,6 +238,20 @@ const evaluateRequest = async (req, res) => {
         );
 
         console.log(`✅ Top Up Wallet credited: $${request.requested_amount} for ${request.member_id}`);
+
+        // Send Email Notification
+        const memberEmail = member.Email || member.email;
+        if (memberEmail) {
+          const { htmlContent, subject } = generateTopUpApprovedEmail(member.Name, request.requested_amount);
+          const attachments = [{
+            filename: 'USDT.png',
+            path: require('path').join(__dirname, '../../utils/USDT.png'),
+            cid: 'bmslogo'
+          }];
+          await sendMail(memberEmail, subject, htmlContent, "Top Up Approved", attachments);
+          console.log(`📧 Top Up approval email sent to ${memberEmail}`);
+        }
+
       } catch (topUpErr) {
         console.error(`❌ Top Up transaction creation failed for ${request_id}:`, topUpErr.message);
       }
@@ -400,13 +413,12 @@ const buyPackageDirectly = async (req, res) => {
       await newAddOn.save();
     }
 
-      // GLOBAL INCOME TRIGGER COMMENTED OUT PER USER REQUEST
-      // try {
-      //   const { distributeGlobalIncome } = require("./globalIncomeService");
-      //   await distributeGlobalIncome(finalTargetId, requested_amount);
-      // } catch (globalIncomeErr) {
-      //   console.error("Global income distribution failed:", globalIncomeErr);
-      // }
+      try {
+        const { distributeGlobalIncome } = require("./globalIncomeService");
+        await distributeGlobalIncome(finalTargetId, requested_amount);
+      } catch (globalIncomeErr) {
+        console.error("Global income distribution failed:", globalIncomeErr);
+      }
     // --- NEW: Single Leg Income (1.5% cashback to the user themselves + up to 100 previous buyers of the same package) ---
     const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
     

@@ -16,7 +16,7 @@ const referralCommissionPercentages = {
   10: 0.5
 };
 
-const packageCommissionPercentages = {
+const levelBenefitsPercentages = {
   1: 20,
   2: 3,
   3: 1,
@@ -117,14 +117,11 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
         continue;
       }
 
-      // Get percentage based on level and package type
-      const percentagesList = pkgType === "Add-On" ? packageCommissionPercentages : referralCommissionPercentages;
-      const percentage = percentagesList[upline.level] || 0;
-
-      if (percentage > 0) {
-        const commissionAmount = Number(((packageValue * percentage) / 100).toFixed(2));
-
-        if (commissionAmount > 0) {
+      // --- 1. Calculate Referral Level Income ---
+      const refPercentage = referralCommissionPercentages[upline.level] || 0;
+      if (refPercentage > 0) {
+        const refAmount = Number(((packageValue * refPercentage) / 100).toFixed(2));
+        if (refAmount > 0) {
           commissions.push({
             level: upline.level,
             sponsor_id: upline.sponsor_id,
@@ -134,15 +131,39 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
             sponsored_member_id: upline.sponsored_member_id,
             new_member_id: newMemberId,
             new_member_name: newMember.Name,
-            amount: commissionAmount,
-            percentage: percentage,
+            amount: refAmount,
+            percentage: refPercentage,
             packageValue: packageValue,
-            payout_type: `${getOrdinal(upline.level)} Level Benefits (${pkgType})`,
-            description: `Level ${upline.level} commission (${percentage}%) from member ${newMemberId}'s ${pkgType} package ($${packageValue})`,
+            payout_type: `Level ${upline.level} Referral Bonus (${pkgType})`,
+            description: `Level ${upline.level} Referral commission (${refPercentage}%) from member ${newMemberId}'s ${pkgType} package ($${packageValue})`,
             sponsor_status: upline.sponsor_status
           });
+          console.log(`✅ [REFERRAL BONUS] Level ${upline.level}: ${upline.sponsor_name} (${upline.sponsor_id}) gets $${refAmount} (${refPercentage}%)`);
+        }
+      }
 
-          console.log(`✅ Level ${upline.level}: ${upline.sponsor_name} (${upline.sponsor_id}) gets $${commissionAmount} (${percentage}%)`);
+      // --- 2. Calculate Level Benefits Income ---
+      const levelPercentage = levelBenefitsPercentages[upline.level] || 0;
+      if (levelPercentage > 0) {
+        const levelAmount = Number(((packageValue * levelPercentage) / 100).toFixed(2));
+        if (levelAmount > 0) {
+          commissions.push({
+            level: upline.level,
+            sponsor_id: upline.sponsor_id,
+            Sponsor_code: upline.Sponsor_code,
+            sponsor_name: upline.sponsor_name,
+            sponsor_mobileno: upline.sponsor_mobileno,
+            sponsored_member_id: upline.sponsored_member_id,
+            new_member_id: newMemberId,
+            new_member_name: newMember.Name,
+            amount: levelAmount,
+            percentage: levelPercentage,
+            packageValue: packageValue,
+            payout_type: `Level ${upline.level} Level Bonus (${pkgType})`,
+            description: `Level ${upline.level} Benefits commission (${levelPercentage}%) from member ${newMemberId}'s ${pkgType} package ($${packageValue})`,
+            sponsor_status: upline.sponsor_status
+          });
+          console.log(`✅ [LEVEL BONUS] Level ${upline.level}: ${upline.sponsor_name} (${upline.sponsor_id}) gets $${levelAmount} (${levelPercentage}%)`);
         }
       }
     }
@@ -283,7 +304,7 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
       mobileno: sponsor_mobileno,
       reference_no: payout_id.toString(),
       description: payout_type,
-      transaction_type: "Level Benefits",
+      transaction_type: payout_type.includes('Referral Bonus') ? "Referral Bonus" : "Level Bonus",
       ew_credit: earningsAmount.toString(),
       uw_credit: upgradeAmount.toString(),
       ew_debit: "0",

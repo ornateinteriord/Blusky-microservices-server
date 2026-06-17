@@ -14,24 +14,24 @@ const recoverySubject = "BMS Foundation - Password Recovery";
 const resetPasswordSubject = "BMS Foundation - OTP Verification";
 
 const generateUniqueMemberId = async () => {
-  let newNumber = 1;
-  // Get the most recently created member with a U ID
-  const lastMember = await MemberModel.findOne({ Member_id: /^U/ }).sort({ _id: -1 });
+  let newNumber = 53553301;
+  // Get the most recently created member with a SBA ID
+  const lastMember = await MemberModel.findOne({ Member_id: /^SBA/ }).sort({ _id: -1 });
 
   if (lastMember && lastMember.Member_id) {
-    const lastNumberStr = lastMember.Member_id.replace('U', '');
+    const lastNumberStr = lastMember.Member_id.replace('SBA', '');
     const lastNumber = parseInt(lastNumberStr, 10);
-    if (!isNaN(lastNumber)) {
+    if (!isNaN(lastNumber) && lastNumber >= 53553301) {
       newNumber = lastNumber + 1;
     }
   }
 
-  let finalId = `U${String(newNumber).padStart(6, '0')}`;
+  let finalId = `SBA${newNumber}`;
 
   // Guarantee uniqueness
   while (await MemberModel.exists({ Member_id: finalId })) {
     newNumber++;
-    finalId = `U${String(newNumber).padStart(6, '0')}`;
+    finalId = `SBA${newNumber}`;
   }
 
   return finalId;

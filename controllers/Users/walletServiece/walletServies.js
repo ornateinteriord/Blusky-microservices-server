@@ -61,14 +61,14 @@ const getWalletOverview = async (req, res) => {
       .reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0);
 
     const levelBenefits = nonLoanTransactions
-      .filter(tx => 
-        (tx.transaction_type?.toLowerCase().includes("level benefit") || 
-         tx.benefit_type?.toLowerCase().includes("level income")) &&
-        !tx.transaction_type?.toLowerCase().includes("roi") &&
-        !tx.description?.toLowerCase().includes("roi") &&
-        Number(tx.level) !== 1 &&
-        tx.status === "Completed"
-      )
+      .filter(tx => {
+        const txType = tx.transaction_type?.toLowerCase() || "";
+        const desc = tx.description?.toLowerCase() || "";
+        return (txType.includes("level benefit") || txType.includes("level bonus") || tx.benefit_type?.toLowerCase().includes("level income")) &&
+               !txType.includes("roi") && !desc.includes("roi") &&
+               !txType.includes("referral") && !desc.includes("referral") &&
+               tx.status === "Completed";
+      })
       .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     const roiLevelBenefits = nonLoanTransactions
@@ -79,14 +79,13 @@ const getWalletOverview = async (req, res) => {
       .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     const directBenefits = nonLoanTransactions
-      .filter(tx =>
-        (tx.transaction_type === "Direct Benefits" ||
-          tx.description === "Direct Benefits" ||
-          tx.transaction_type === "Direct benefits" ||
-          tx.description === "Direct benefits" ||
-          (tx.transaction_type?.toLowerCase().includes("level benefit") && Number(tx.level) === 1)) &&
-        tx.status === "Completed"
-      )
+      .filter(tx => {
+        const txType = tx.transaction_type?.toLowerCase() || "";
+        const desc = tx.description?.toLowerCase() || "";
+        return (txType === "direct benefits" || desc === "direct benefits" || 
+                txType.includes("referral") || desc.includes("referral")) &&
+               tx.status === "Completed";
+      })
       .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0) + (parseFloat(tx.uw_credit) || 0), 0);
 
     // Repayment Commission calculation

@@ -344,6 +344,11 @@ const getWalletWithdraw = async (req, res) => {
 
 
 
+    const addonPackages = await AddOnPackageModel.find({ member_id: memberId, request_id: { $ne: 'PRIMARY' } });
+    const totalAddonAmount = addonPackages.reduce((acc, pkg) => acc + (pkg.amount || 0), 0);
+    const totalPackages = (member.package_value || 0) + totalAddonAmount;
+    const maxWithdrawal = totalPackages * 0.25;
+
     if (withdrawalAmount < 5) {
       return res.status(400).json({
         success: false,
@@ -357,7 +362,17 @@ const getWalletWithdraw = async (req, res) => {
       });
     }
 
-    // Max limit check removed as per user request
+    if (withdrawalAmount > maxWithdrawal) {
+      return res.status(400).json({
+        success: false,
+        message: `Maximum withdrawal limit is $${maxWithdrawal.toFixed(2)} (25% of your total package amount)`,
+        loanStatus: {
+          hasUnpaidLoan: hasUnpaidLoan,
+          isWithdrawalAllowed: false,
+          message: `Limit exceeded. Maximum allowed: $${maxWithdrawal.toFixed(2)}`
+        }
+      });
+    }
 
     // Check if member has unpaid loan from before last Saturday
     if (hasUnpaidLoan) {
@@ -560,8 +575,17 @@ const sendWithdrawalOTP = async (req, res) => {
 
     let availableBalance = Math.max(0, totalCredits - totalDebits);
 
+    const addonPackages = await AddOnPackageModel.find({ member_id: memberId, request_id: { $ne: 'PRIMARY' } });
+    const totalAddonAmount = addonPackages.reduce((acc, pkg) => acc + (pkg.amount || 0), 0);
+    const totalPackages = (member.package_value || 0) + totalAddonAmount;
+    const maxWithdrawal = totalPackages * 0.25;
+
     if (withdrawalAmount < 5) {
       return res.status(400).json({ success: false, message: "Minimum withdrawal amount is $5" });
+    }
+
+    if (withdrawalAmount > maxWithdrawal) {
+      return res.status(400).json({ success: false, message: `Maximum withdrawal limit is $${maxWithdrawal.toFixed(2)} (25% of your total package amount)` });
     }
 
     if (hasUnpaidLoan) {

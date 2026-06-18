@@ -25,6 +25,7 @@ const TransactionSchema = new mongoose.Schema(
     withdrawal_amount: { type: String },
     benefit_type: { type: String, default: "direct" },
     previous_balance: { type: String },
+    balance: { type: String },
 
     level: { type: Number },
     related_member_id: { type: String },

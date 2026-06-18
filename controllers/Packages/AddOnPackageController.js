@@ -381,7 +381,8 @@ const buyPackageDirectly = async (req, res) => {
       ew_debit: Number(requested_amount),
       status: "Completed",
       net_amount: Number(requested_amount),
-      gross_amount: Number(requested_amount)
+      gross_amount: Number(requested_amount),
+      balance: (topUpBalance - Number(requested_amount)).toString()
     });
     await deductionTx.save();
 

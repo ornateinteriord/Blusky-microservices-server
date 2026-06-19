@@ -45,9 +45,9 @@ const TransactionSchema = new mongoose.Schema(
     // Payment context for loan repayments
     repayment_context: {
       member_id: { type: String },
-      requested_amount: { type: Number },
-      current_due_amount: { type: Number },
-      new_due_amount: { type: Number },
+      requested_amount: { type: Number, set: v => Math.round(v * 10000) / 10000 },
+      current_due_amount: { type: Number, set: v => Math.round(v * 10000) / 10000 },
+      new_due_amount: { type: Number, set: v => Math.round(v * 10000) / 10000 },
       member_name: { type: String },
       member_phone: { type: String },
       original_loan_id: { type: mongoose.Schema.Types.ObjectId },
@@ -60,7 +60,7 @@ const TransactionSchema = new mongoose.Schema(
       payment_method: { type: String },
       bank_reference: { type: String },
       payment_time: { type: String },
-      payment_amount: { type: Number }
+      payment_amount: { type: Number, set: v => Math.round(v * 10000) / 10000 }
     },
 
     // Idempotency tracking for webhooks

@@ -2,7 +2,7 @@ const mongoose = require("mongoose");
 
 const GlobalIncomeQueueSchema = new mongoose.Schema({
   member_id: { type: String, required: true },
-  package_amount: { type: Number, required: true },
+  package_amount: { type: Number, required: true, set: v => Math.round(v * 10000) / 10000 },
   queue_index: { type: Number, required: true },
 }, { timestamps: true, collection: "global_income_queue_tbl" });
 

@@ -7,7 +7,7 @@ const PaymentSchema = new mongoose.Schema(
     orderId: { type: String, index: true, unique: true },
     cfOrderId: { type: String },
     paymentSessionId: { type: String },
-    amount: { type: Number, required: true },
+    amount: { type: Number, required: true, set: v => Math.round(v * 10000) / 10000 },
     currency: { type: String, default: "INR" },
     status: {
       type: String,
@@ -38,7 +38,7 @@ const PaymentSchema = new mongoose.Schema(
     notes: { type: mongoose.Schema.Types.Mixed },
 
     // Payment verification fields
-    verifiedAmount: { type: Number },
+    verifiedAmount: { type: Number, set: v => Math.round(v * 10000) / 10000 },
     amountMismatch: { type: Boolean, default: false },
 
     // Webhook tracking

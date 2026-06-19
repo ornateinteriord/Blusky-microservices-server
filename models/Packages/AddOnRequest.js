@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const AddOnRequestSchema = new mongoose.Schema({
   request_id: { type: String, required: true, unique: true },
   member_id: { type: String, required: true },
-  requested_amount: { type: Number, required: true },
+  requested_amount: { type: Number, required: true, set: v => Math.round(v * 10000) / 10000 },
   status: { 
     type: String, 
     enum: ["PENDING", "APPROVED", "REJECTED"], 

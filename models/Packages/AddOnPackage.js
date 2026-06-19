@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const AddOnPackageSchema = new mongoose.Schema({
   package_id: { type: String, required: true, unique: true },
   member_id: { type: String, required: true },
-  amount: { type: Number, required: true },
+  amount: { type: Number, required: true, set: v => Math.round(v * 10000) / 10000 },
   
   // Independent ROI Tracking
   roi_status: { type: String, enum: ["Pending", "Active", "Completed"], default: "Active" },

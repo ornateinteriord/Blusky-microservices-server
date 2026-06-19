@@ -57,6 +57,7 @@ const commissionSchema = new mongoose.Schema(
         transaction_amount: {
             type: Number,
             required: true,
+            set: v => Math.round(v * 10000) / 10000
         },
         // Commission Calculation
         commission_rate: {
@@ -66,6 +67,7 @@ const commissionSchema = new mongoose.Schema(
         commission_amount: {
             type: Number,
             required: true,
+            set: v => Math.round(v * 10000) / 10000
         },
         level: {
             type: Number,

@@ -21,9 +21,9 @@ const MemberSchema = new mongoose.Schema(
     Sponsor_name: { type: String, },
     Date_of_joining: { type: String, default: () => moment().format("YYYY-MM-DD") },
     spackage: { type: String },
-    package_value: { type: Number },
+    package_value: { type: Number, set: v => Math.round(v * 10000) / 10000 },
     epin_no: { type: String },
-    amount: { type: Number },
+    amount: { type: Number, set: v => Math.round(v * 10000) / 10000 },
     mode_of_payment: { type: String },
     Pan_no: { type: String },
     Nominee_name: { type: String },
@@ -80,10 +80,10 @@ const MemberSchema = new mongoose.Schema(
       enum: ["NOT_CREATED", "FAILED", "CREATED"],
       default: "NOT_CREATED"
     },
-    wallet_balance: { type: Number, default: 0 },
-    upgrade_wallet: { type: Number, default: 0 },
-    top_up_wallet: { type: Number, default: 0 },
-    global_income: { type: Number, default: 0 },
+    wallet_balance: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
+    upgrade_wallet: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
+    top_up_wallet: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
+    global_income: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
 
     // NIDHI SPECIFIC FIELDS (Lowercase mappings)
     member_id: { type: String }, // Counterpart to Member_id
@@ -103,7 +103,7 @@ const MemberSchema = new mongoose.Schema(
     introducer: { type: String, default: null }, // Nidhi hierarchy seed
     introducer_name: { type: String, default: null },
     commission_eligible: { type: Boolean, default: true },
-    commission_balance: { type: Number, default: 0 },
+    commission_balance: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
     introducer_hierarchy: { type: [String], default: [] },
     member_image: { type: String, default: null },
     member_signature: { type: String, default: null },

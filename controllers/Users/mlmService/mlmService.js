@@ -119,7 +119,7 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
 
       // --- 1. Calculate Referral Level Income ---
       const refPercentage = referralCommissionPercentages[upline.level] || 0;
-      if (refPercentage > 0) {
+      if (refPercentage > 0 && upline.level === 1) {
         const refAmount = Number(((packageValue * refPercentage) / 100).toFixed(2));
         if (refAmount > 0) {
           commissions.push({
@@ -144,7 +144,7 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
 
       // --- 2. Calculate Level Benefits Income ---
       const levelPercentage = levelBenefitsPercentages[upline.level] || 0;
-      if (levelPercentage > 0) {
+      if (levelPercentage > 0 && upline.level > 1) {
         const levelAmount = Number(((packageValue * levelPercentage) / 100).toFixed(2));
         if (levelAmount > 0) {
           commissions.push({

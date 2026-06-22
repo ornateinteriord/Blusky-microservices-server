@@ -4,6 +4,7 @@ const UpdatePassword = require("../controllers/Admin/UpdatePassword");
 const getTransactionDetails = require("../controllers/Transaction/Transaction");
 const { getEpinsSummary, generatePackage } = require("../controllers/Users/Epin/epin");
 const { getDailyPayout,   getRewardLoansByStatus, processRewardLoan, triggerDailyROI, getROISummary, getROIBenefits } = require("../controllers/Users/Payout/PayoutController");
+const { processAutoUpgrades } = require("../controllers/Packages/autoUpgradeService");
 
 // NIDHI ADMIN CONTROLLERS
 const { createMember, getMembers: getNidhiMembers, updateMember: updateNidhiMember, getMemberById: getNidhiMemberById, setIntroducerHierarchy } = require("../controllers/Admin/Member/index");
@@ -48,6 +49,14 @@ router.get('/reward-loans/:status', getRewardLoansByStatus);
 
 router.put('/reward-loans/:memberId/:action', processRewardLoan);
 router.post('/trigger-roi', Authenticated, authorizeRoles("ADMIN"), triggerDailyROI);
+router.post('/trigger-auto-upgrades', Authenticated, authorizeRoles("ADMIN"), async (req, res) => {
+    try {
+        const result = await processAutoUpgrades();
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 
 // ======================================================

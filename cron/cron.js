@@ -40,7 +40,8 @@ const initCronJobs = () => {
     // 3. Immediate check on startup (Catch-up logic)
     // Ensures missed days are processed if the server was offline.
     setTimeout(async () => {
-        console.log("⏰ [CRON] Running Startup ROI Check (Fail-Safe Catch-up)...");
+        console.log("⏰ [CRON] Running Startup ROI Check & Auto-Upgrade (Fail-Safe Catch-up)...");
+        
         try {
             const result = await processDailyROI();
             if (result.processedCount > 0) {
@@ -50,6 +51,17 @@ const initCronJobs = () => {
             }
         } catch (error) {
             console.error("❌ [CRON] Error in Startup ROI Catch-up:", error.message);
+        }
+
+        try {
+            const autoUpgradeResult = await processAutoUpgrades();
+            if (autoUpgradeResult && autoUpgradeResult.processedCount > 0) {
+                console.log(`✅ [CRON] Startup Auto-Upgrade completed. Processed: ${autoUpgradeResult.processedCount} upgrades.`);
+            } else {
+                console.log("📅 [CRON] Startup Auto-Upgrade: No eligible upgrades found.");
+            }
+        } catch (error) {
+            console.error("❌ [CRON] Error in Startup Auto-Upgrade Catch-up:", error.message);
         }
     }, 5000);
 };

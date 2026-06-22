@@ -10,8 +10,8 @@ const { updateSponsorReferrals } = require("../../controllers/Users/mlmService/m
 const { addMemberHierarchy } = require("../../utils/hierarchyHelper");
 const path = require("path");
 
-const recoverySubject = "BMS Foundation - Password Recovery";
-const resetPasswordSubject = "BMS Foundation - OTP Verification";
+const recoverySubject = "USDT World Club - Password Recovery";
+const resetPasswordSubject = "USDT World Club - OTP Verification";
 
 const generateUniqueMemberId = async () => {
   let newNumber = 53553301;
@@ -93,7 +93,7 @@ const signup = async (req, res) => {
 
       const { welcomeMessage, welcomeSubject } = generateMSCSEmail(memberId, password, Name);
 
-      const textContent = `Dear ${Name}, Your account registration with BMS Foundation has been completed. Member ID: ${memberId}, Password: ${password}. Your account is under verification process.`;
+      const textContent = `Dear ${Name}, Your account registration with USDT World Club has been completed. Member ID: ${memberId}, Password: ${password}. Your account is under verification process.`;
 
       const attachments = [{
         filename: 'USDT.png',
@@ -159,7 +159,7 @@ You requested a password recovery. Here is your password:
 
 Please keep this information secure.
 
-Best regards,\nBMS Foundation Team`;
+Best regards,\nUSDT World Club Team`;
 
     await sendMail(user.email, recoverySubject, recoveryDescription);
     res.json({ success: true, message: "Password sent to your email" });

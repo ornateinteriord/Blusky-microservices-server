@@ -673,7 +673,7 @@ const sendWithdrawalOTP = async (req, res) => {
       const decodedToken = await admin.auth().verifyIdToken(otp);
       const phoneVerified = decodedToken.phone_number;
       
-      let memberPhone = member.mobileno;
+      let memberPhone = String(member.mobileno).trim().replace(/\s+/g, '');
       if (!memberPhone.startsWith('+')) {
         memberPhone = '+91' + memberPhone;
       }
@@ -687,10 +687,22 @@ const sendWithdrawalOTP = async (req, res) => {
     }
 
     let currentBalance = 0;
+    const transactions = await TransactionModel.find({ member_id: memberId });
+
     if (fromWallet === "Earnings") {
-       currentBalance = member.wallet_balance || 0;
+       const nonLoanTransactions = transactions.filter(tx =>
+         !tx.transaction_type?.toLowerCase().includes('loan') &&
+         !tx.description?.toLowerCase().includes('loan') &&
+         tx.transaction_type !== 'Top up'
+       );
+       const completedAndPendingTx = nonLoanTransactions.filter(tx =>
+         tx.status === "Completed" || tx.status === "Pending" || tx.status === "Approved"
+       );
+       const availableBalance = completedAndPendingTx.reduce((acc, tx) =>
+         acc + (parseFloat(tx.ew_credit) || 0) - (parseFloat(tx.ew_debit) || 0), 0
+       );
+       currentBalance = Math.max(0, availableBalance);
     } else if (fromWallet === "Top Up") {
-       const transactions = await TransactionModel.find({ member_id: memberId });
        const topUpTransactions = transactions.filter(tx => tx.transaction_type === 'Top up');
        const topUpCredits = topUpTransactions
          .filter(tx => tx.status === 'Completed' || tx.status === 'Approved')

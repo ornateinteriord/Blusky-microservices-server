@@ -172,7 +172,7 @@ const resetPassword = async (req, res) => {
       const decodedToken = await admin.auth().verifyIdToken(otp);
       const phoneVerified = decodedToken.phone_number;
       
-      let memberPhone = user.mobileno;
+      let memberPhone = String(user.mobileno).trim().replace(/\s+/g, '');
       if (!memberPhone.startsWith('+')) {
         memberPhone = '+91' + memberPhone;
       }

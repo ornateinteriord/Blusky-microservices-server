@@ -5,6 +5,7 @@ const CommissionModel = require("../../../models/commission.model");
 const path = require("path");
 const { generateOTP, storeOTP, verifyOTP } = require("../../../utils/OtpService");
 const { sendMail } = require("../../../utils/EmailService");
+const admin = require("../../../utils/FirebaseService");
 
 const getWalletOverview = async (req, res) => {
   try {
@@ -641,98 +642,11 @@ const sendWithdrawalOTP = async (req, res) => {
     return res.status(500).json({ success: false, message: "Server error", error: error.message });
   }
 };const sendTransferOTP = async (req, res) => {
-  try {
-    const { memberId, fromWallet, toWallet, amount } = req.body;
-
-    if (!memberId || !fromWallet || !toWallet || !amount) {
-      return res.status(400).json({ success: false, message: "Missing required fields" });
-    }
-
-    const transferAmount = parseFloat(amount);
-    if (isNaN(transferAmount) || transferAmount <= 0) {
-      return res.status(400).json({ success: false, message: "Invalid transfer amount" });
-    }
-
-    if (fromWallet === "Earnings" && toWallet !== "Top Up Wallet") {
-       return res.status(400).json({ success: false, message: "Earnings can only be transferred to Top Up Wallet" });
-    }
-    if (fromWallet === "Top Up" && toWallet !== "Upgrade Wallet") {
-       return res.status(400).json({ success: false, message: "Top Up can only be transferred to Upgrade Wallet" });
-    }
-
-    const member = await MemberModel.findOne({ Member_id: memberId });
-    if (!member) {
-      return res.status(404).json({ success: false, message: "Member not found" });
-    }
-
-    let currentBalance = 0;
-    if (fromWallet === "Earnings") {
-       currentBalance = member.wallet_balance || 0;
-    } else if (fromWallet === "Top Up") {
-       const transactions = await TransactionModel.find({ member_id: memberId });
-       const topUpTransactions = transactions.filter(tx => tx.transaction_type === 'Top up');
-       const topUpCredits = topUpTransactions
-         .filter(tx => tx.status === 'Completed' || tx.status === 'Approved')
-         .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
-       const topUpDebits = topUpTransactions
-         .filter(tx => tx.status === 'Completed' || tx.status === 'Approved')
-         .reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0);
-       currentBalance = Math.max(0, topUpCredits - topUpDebits);
-    } else {
-       return res.status(400).json({ success: false, message: "Invalid source wallet" });
-    }
-
-    if (transferAmount > currentBalance) {
-      return res.status(400).json({ success: false, message: "Insufficient balance in " + fromWallet });
-    }
-
-    // Generate and send OTP
-    const otp = generateOTP();
-    storeOTP(member.email, otp);
-
-    const bmsLogoPath = path.join(__dirname, '..', '..', '..', 'utils', 'USDT.png');
-    const attachments = [{
-      filename: 'USDT.png',
-      path: bmsLogoPath,
-      cid: 'bmslogo'
-    }];
-
-    const htmlContent = `
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
-      <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
-      </div>
-      <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
-        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Transfer Verification</h2>
-        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
-          Dear <strong style="color: #fbbf24;">${member.Name || 'Member'}</strong>,
-        </p>
-        <p style="color: #ffffff; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-          You have requested to transfer <strong>$${transferAmount}</strong> from your <strong>${fromWallet}</strong> to <strong>${toWallet}</strong>. 
-          Please use the following OTP to complete this transaction:
-        </p>
-        <div style="background-color: #374151; border-left: 4px solid #fbbf24; padding: 20px; margin: 25px 0; border-radius: 4px; text-align: center;">
-          <h1 style="color: #fbbf24; margin: 0; font-size: 32px; letter-spacing: 5px;">${otp}</h1>
-        </div>
-        <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
-          This OTP is valid for 3 minutes. If you did not request this transfer, please secure your account immediately.
-        </p>
-      </div>
-      <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
-      </div>
-    </div>`;
-
-    await sendMail(member.email, "USDT World Club - Transfer Verification OTP", htmlContent, `Your OTP is ${otp}`, attachments);
-
-    return res.status(200).json({ success: true, message: "OTP sent to your registered email" });
-  } catch (error) {
-    console.error("Error in sendTransferOTP:", error);
-    return res.status(500).json({ success: false, message: "Server error", error: error.message });
-  }
+  // Deprecated: SMS OTP is now handled by Firebase Phone Auth on the frontend.
+  return res.status(200).json({ success: true, message: "Deprecated endpoint" });
 };const transferWallet = async (req, res) => {
   try {
-    const { memberId, fromWallet, toWallet, amount, otp } = req.body;
+    const { memberId, fromWallet, toWallet, amount, otp } = req.body; // otp here is the Firebase idToken
 
     if (!memberId || !fromWallet || !toWallet || !amount || !otp) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
@@ -755,8 +669,21 @@ const sendWithdrawalOTP = async (req, res) => {
       return res.status(404).json({ success: false, message: "Member not found" });
     }
 
-    if (!verifyOTP(member.email, otp)) {
-      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+    try {
+      const decodedToken = await admin.auth().verifyIdToken(otp);
+      const phoneVerified = decodedToken.phone_number;
+      
+      let memberPhone = member.mobileno;
+      if (!memberPhone.startsWith('+')) {
+        memberPhone = '+91' + memberPhone;
+      }
+      
+      if (phoneVerified !== memberPhone) {
+        return res.status(400).json({ success: false, message: "Phone number mismatch. Please use your registered mobile number." });
+      }
+    } catch (firebaseError) {
+      console.error("Firebase Verification Error:", firebaseError);
+      return res.status(400).json({ success: false, message: "Invalid or expired Firebase token." });
     }
 
     let currentBalance = 0;

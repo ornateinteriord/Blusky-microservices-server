@@ -5,6 +5,7 @@ const {
   sendMail,
 } = require("../../utils/EmailService");
 const { generateOTP, storeOTP, verifyOTP } = require("../../utils/OtpService");
+const admin = require("../../utils/FirebaseService");
 const { generateMSCSEmail } = require("../../utils/generateMSCSEmail");
 const { updateSponsorReferrals } = require("../../controllers/Users/mlmService/mlmService");
 const { addMemberHierarchy } = require("../../utils/hierarchyHelper");
@@ -143,47 +144,47 @@ const getSponsorDetails = async (req, res) => {
   }
 };
 
-const recoverPassword = async (req, res) => {
-  try {
-    const { email } = req.body;
-    const user = await MemberModel.findOne({ email });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Email not registered" });
-    }
-    const recoveryDescription = `Dear Member,
-
-You requested a password recovery. Here is your password:
- ${user.password}
-
-Please keep this information secure.
-
-Best regards,\nUSDT World Club Team`;
-
-    await sendMail(user.email, recoverySubject, recoveryDescription);
-    res.json({ success: true, message: "Password sent to your email" });
-  } catch (error) {
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
 const resetPassword = async (req, res) => {
   try {
-    const { email, password, otp } = req.body;
-    const user = await MemberModel.findOne({ email });
-    if (!user) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Email not registered" });
+    const { mobileno, password, otp } = req.body;
+    
+    if (!mobileno || !password || !otp) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
     }
 
-    if (otp && password) {
-      if (!verifyOTP(email, otp)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid OTP or expired" });
+    let searchPhone = mobileno;
+    // Format the phone number since MongoDB stores it without +91 sometimes or with +91.
+    // Try finding exact match, or match without +91, or match with +91
+    let user = await MemberModel.findOne({
+      $or: [
+        { mobileno: searchPhone },
+        { mobileno: searchPhone.replace('+91', '') },
+        { mobileno: '+91' + searchPhone.replace('+91', '') }
+      ]
+    });
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: "Mobile number not registered" });
+    }
+
+    try {
+      // Verify Firebase token
+      const decodedToken = await admin.auth().verifyIdToken(otp);
+      const phoneVerified = decodedToken.phone_number;
+      
+      let memberPhone = user.mobileno;
+      if (!memberPhone.startsWith('+')) {
+        memberPhone = '+91' + memberPhone;
       }
+      
+      // Also format the phoneVerified to remove +91 for comparison if needed
+      let formattedVerifiedPhone = phoneVerified;
+      
+      if (formattedVerifiedPhone !== memberPhone) {
+        return res.status(400).json({ success: false, message: "Phone number mismatch. Please use your registered mobile number." });
+      }
+
+      // Reset password
       user.password = password;
       await user.save();
 
@@ -191,56 +192,10 @@ const resetPassword = async (req, res) => {
         success: true,
         message: "Password reset successfully",
       });
+    } catch (firebaseError) {
+      console.error("Firebase Verification Error:", firebaseError);
+      return res.status(400).json({ success: false, message: "Invalid or expired Firebase token." });
     }
-
-    if (otp && !password) {
-      if (!verifyOTP(email, otp, true)) {
-        return res
-          .status(400)
-          .json({ success: false, message: "Invalid OTP or expired" });
-      }
-      return res.json({ success: true, message: "OTP verified. Now set a new password." });
-    }
-
-    if (password && !otp) {
-      return res
-        .status(400)
-        .json({ success: false, message: "OTP is required to set a new password" });
-    }
-    const newOtp = generateOTP();
-
-    const textContent = `Dear Member,\n\nYour OTP for password reset is: ${newOtp}\n\nPlease use this OTP to proceed with resetting your password.\n\nPlease don't share this OTP with anyone.\n\nBest regards,\nUSDT World Club Team`;
-
-    const htmlContent = `
-    <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
-      <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
-      </div>
-      <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
-        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Password Reset Request</h2>
-        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">Dear Member,</p>
-        <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">We received a request to reset the password for your account. Please use the following One-Time Password (OTP) to complete the process:</p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <span style="font-size: 32px; font-weight: 800; color: #fbbf24; letter-spacing: 4px; padding: 15px 30px; background-color: #374151; border-radius: 8px; border: 2px dashed #fbbf24; display: inline-block;">${newOtp}</span>
-        </div>
-        
-        <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 10px;"><strong>Security Notice:</strong> Please do not share this code with anyone. This OTP is valid for a limited time.</p>
-      </div>
-      <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
-      </div>
-    </div>`;
-
-    const attachments = [{
-      filename: 'USDT.png',
-      path: path.join(__dirname, '../../utils/USDT.png'),
-      cid: 'bmslogo'
-    }];
-
-    storeOTP(email, newOtp);
-    await sendMail(email, resetPasswordSubject, htmlContent, textContent, attachments);
-    return res.json({ success: true, message: "OTP sent to your email" });
   } catch (error) {
     console.error("Error in resetPassword:", error);
     res.status(500).json({ success: false, message: error.message });
@@ -331,7 +286,6 @@ const impersonate = async (req, res) => {
 module.exports = {
   signup,
   getSponsorDetails,
-  recoverPassword,
   resetPassword,
   login,
   impersonate,

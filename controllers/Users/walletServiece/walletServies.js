@@ -611,7 +611,7 @@ const sendWithdrawalOTP = async (req, res) => {
     const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
       <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
+        <img src="cid:bmslogo" alt="UWC+ Logo" style="max-width: 120px; height: auto;" />
       </div>
       <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
         <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Withdrawal Verification</h2>
@@ -630,11 +630,11 @@ const sendWithdrawalOTP = async (req, res) => {
         </p>
       </div>
       <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
+        &copy; ${new Date().getFullYear()} UWC+. All rights reserved.
       </div>
     </div>`;
 
-    await sendMail(member.email, "USDT World Club - Withdrawal Verification OTP", htmlContent, `Your OTP is ${otp}`, attachments);
+    await sendMail(member.email, "UWC+ - Withdrawal Verification OTP", htmlContent, `Your OTP is ${otp}`, attachments);
 
     return res.status(200).json({ success: true, message: "OTP sent to your registered email" });
   } catch (error) {

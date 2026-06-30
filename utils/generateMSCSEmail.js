@@ -5,12 +5,12 @@ const generateMSCSEmail = (memberId, password, name = 'Member') => {
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
       <!-- Logo Header -->
       <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
+        <img src="cid:bmslogo" alt="UWC+ Logo" style="max-width: 120px; height: auto;" />
       </div>
       
       <!-- Content -->
       <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
-        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Welcome to USDT World Club!</h2>
+        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Welcome to UWC+!</h2>
         
         <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
           Dear <strong style="color: #fbbf24;">${name}</strong>,
@@ -34,7 +34,7 @@ const generateMSCSEmail = (memberId, password, name = 'Member') => {
 
       <!-- Footer -->
       <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
+        &copy; ${new Date().getFullYear()} UWC+. All rights reserved.
       </div>
     </div>
   `;
@@ -43,13 +43,13 @@ const generateMSCSEmail = (memberId, password, name = 'Member') => {
 };
 
 const generateTopUpApprovedEmail = (name, amount) => {
-  const subject = 'USDT World Club - Fund Load Approved';
+  const subject = 'UWC+ - Fund Load Approved';
 
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
       <!-- Logo Header -->
       <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="USDT World Club Logo" style="max-width: 120px; height: auto;" />
+        <img src="cid:bmslogo" alt="UWC+ Logo" style="max-width: 120px; height: auto;" />
       </div>
       
       <!-- Content -->
@@ -77,7 +77,7 @@ const generateTopUpApprovedEmail = (name, amount) => {
 
       <!-- Footer -->
       <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} USDT World Club. All rights reserved.
+        &copy; ${new Date().getFullYear()} UWC+. All rights reserved.
       </div>
     </div>
   `;

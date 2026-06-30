@@ -11,8 +11,8 @@ const { updateSponsorReferrals } = require("../../controllers/Users/mlmService/m
 const { addMemberHierarchy } = require("../../utils/hierarchyHelper");
 const path = require("path");
 
-const recoverySubject = "USDT World Club - Password Recovery";
-const resetPasswordSubject = "USDT World Club - OTP Verification";
+const recoverySubject = "UWC+ - Password Recovery";
+const resetPasswordSubject = "UWC+ - OTP Verification";
 
 const generateUniqueMemberId = async () => {
   let newNumber = 53553301;
@@ -94,7 +94,7 @@ const signup = async (req, res) => {
 
       const { welcomeMessage, welcomeSubject } = generateMSCSEmail(memberId, password, Name);
 
-      const textContent = `Dear ${Name}, Your account registration with USDT World Club has been completed. Member ID: ${memberId}, Password: ${password}. Your account is under verification process.`;
+      const textContent = `Dear ${Name}, Your account registration with UWC+ has been completed. Member ID: ${memberId}, Password: ${password}. Your account is under verification process.`;
 
       const attachments = [{
         filename: 'USDT.png',

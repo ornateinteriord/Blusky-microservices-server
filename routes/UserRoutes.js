@@ -12,7 +12,7 @@ const { createTicket, getTickets } = require("../controllers/Users/Ticket/Ticket
 const Authenticated = require("../middlewares/auth");
 const {  triggerMLMCommissions, getMemberCommissionSummary, getDailyPayout, climeRewardLoan, repaymentLoan, getROIBenefits, triggerUserROI } = require("../controllers/Users/Payout/PayoutController");
 const { getPendingTransactions, approveWithdrawal } = require("../controllers/Users/payoutPending/pendingTransactions");
-const { getWalletOverview, getWalletWithdraw, transferWallet, sendTransferOTP, sendWithdrawalOTP } = require("../controllers/Users/walletServiece/walletServies");
+const { getWalletOverview, getWalletWithdraw, transferWallet, sendTransferOTP, sendWithdrawalOTP, lookupMemberForTransfer, transferP2PWallet } = require("../controllers/Users/walletServiece/walletServies");
 const { getUplineTree } = require("../controllers/Users/mlmService/mlmService");
 // const { createOrder, getOrderStatus, webhook } = require("../controllers/Payments/CashfreeController");
 
@@ -38,15 +38,12 @@ router.get("/ticket/:id", Authenticated, getTickets);
 router.get("/epin", Authenticated, getEpins);
 router.put('/transferPackage', Authenticated, transferEpin);
 router.get('/package-history', Authenticated, getPackageHistory);
-
-router.get('/sponsers/:memberId', Authenticated, getSponsers);
-router.get("/check-sponsor-reward/:memberId", Authenticated, checkSponsorReward);
-router.get('/multi-level-sponsors', Authenticated, getMultiLevelSponsorship);
-
-router.post("/mlm/trigger-commissions", Authenticated, triggerMLMCommissions);
-router.get("/mlm/commission-summary/:member_id", getMemberCommissionSummary);
-router.get("/mlm/upline-tree/:member_id", getUplineTree);
-// router.get("/mlm/payouts/:memberId", Authenticated, getMemberPayouts);
+router.get("/sponser/:memberId", Authenticated, getSponsers);
+router.get("/sponser-tree/:id", Authenticated, getMultiLevelSponsorship);
+router.get("/upline-tree/:id", Authenticated, getUplineTree);
+router.get("/check-sponsor-reward", Authenticated, checkSponsorReward);
+router.get("/commissions/summary/:member_id", Authenticated, getMemberCommissionSummary);
+router.get("/trigger-commissions", triggerMLMCommissions);
 
 
 router.get("/overview/:memberId", Authenticated, getWalletOverview);
@@ -54,6 +51,8 @@ router.post("/withdraw/:memberId", Authenticated, getWalletWithdraw);
 router.post("/withdraw/send-otp/:memberId", Authenticated, sendWithdrawalOTP);
 router.post("/transfer-wallet", Authenticated, transferWallet);
 router.post("/transfer-wallet/send-otp", Authenticated, sendTransferOTP);
+router.get("/transfer-lookup", Authenticated, lookupMemberForTransfer);
+router.post("/transfer-p2p", Authenticated, transferP2PWallet);
 router.put('/approve-withdrawal/:transaction_id', Authenticated, approveWithdrawal);
 
 

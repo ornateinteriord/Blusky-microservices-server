@@ -80,9 +80,15 @@ const getMemberDetails = async (req, res) => {
 
     const indirectCount = totalTeamCount - directCount;
 
+    if (!foundUser.qr_code && (foundUser.Member_id || foundUser.member_id)) {
+      foundUser.qr_code = `UWC-P2P:${foundUser.Member_id || foundUser.member_id}`;
+      await foundUser.save();
+    }
+
     // Add registration data to response
     const responseData = {
       ...foundUser.toObject(),
+      qr_code: foundUser.qr_code || `UWC-P2P:${foundUser.Member_id || foundUser.member_id}`,
       registration_stats: {
         direct: directCount,
         indirect: indirectCount,

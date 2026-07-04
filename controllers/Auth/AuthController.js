@@ -59,6 +59,7 @@ const signup = async (req, res) => {
 
     let memberData = {
       Member_id: memberId,
+      qr_code: `UWC-P2P:${memberId}`,
       email,
       password,
       Name,

@@ -54,13 +54,18 @@ const findUplineSponsors = async (memberId, maxLevels = 15) => {
   let level = 0;
 
   while (level < maxLevels) {
-    const currentMember = await MemberModel.findOne({ Member_id: currentMemberId });
+    const currentMember = await MemberModel.findOne({
+      $or: [{ Member_id: currentMemberId }, { member_id: currentMemberId }]
+    });
 
-    if (!currentMember || !currentMember.sponsor_id) {
+    const sponsorIdentifier = currentMember?.sponsor_id || currentMember?.Sponsor_code || currentMember?.introducer;
+    if (!currentMember || !sponsorIdentifier) {
       break; // No more sponsors in the chain
     }
 
-    const sponsor = await MemberModel.findOne({ Member_id: currentMember.sponsor_id });
+    const sponsor = await MemberModel.findOne({
+      $or: [{ Member_id: sponsorIdentifier }, { member_id: sponsorIdentifier }, { member_code: sponsorIdentifier }]
+    });
     if (!sponsor) {
       break; // Sponsor not found
     }
@@ -77,7 +82,7 @@ const findUplineSponsors = async (memberId, maxLevels = 15) => {
     });
 
     // Move up the chain
-    currentMemberId = sponsor.Member_id;
+    currentMemberId = sponsor.Member_id || sponsor.member_id;
   }
 
   // console.log(`📊 Found ${uplineSponsors.length} upline sponsors for member ${memberId}`);
@@ -340,13 +345,14 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
 
 const updateSponsorReferrals = async (sponsorId, newMemberId) => {
   try {
-    const sponsor = await MemberModel.findOne({ Member_id: sponsorId });
+    const sponsorQuery = { $or: [{ Member_id: sponsorId }, { member_id: sponsorId }] };
+    const sponsor = await MemberModel.findOne(sponsorQuery);
     if (!sponsor) {
       console.error(`Sponsor not found: ${sponsorId}`);
       return;
     }
     await MemberModel.findOneAndUpdate(
-      { Member_id: sponsorId },
+      sponsorQuery,
       {
         $addToSet: { direct_referrals: newMemberId },
         $inc: { total_team: 1 }

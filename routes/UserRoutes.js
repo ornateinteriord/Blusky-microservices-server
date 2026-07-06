@@ -39,8 +39,11 @@ router.get("/epin", Authenticated, getEpins);
 router.put('/transferPackage', Authenticated, transferEpin);
 router.get('/package-history', Authenticated, getPackageHistory);
 router.get("/sponser/:memberId", Authenticated, getSponsers);
+router.get("/sponsers/:memberId", Authenticated, getSponsers);
 router.get("/sponser-tree/:id", Authenticated, getMultiLevelSponsorship);
+router.get("/multi-level-sponsors", Authenticated, getMultiLevelSponsorship);
 router.get("/upline-tree/:id", Authenticated, getUplineTree);
+router.get("/check-sponsor-reward/:memberId", Authenticated, checkSponsorReward);
 router.get("/check-sponsor-reward", Authenticated, checkSponsorReward);
 router.get("/commissions/summary/:member_id", Authenticated, getMemberCommissionSummary);
 router.get("/trigger-commissions", triggerMLMCommissions);
@@ -56,7 +59,8 @@ router.post("/transfer-p2p", Authenticated, transferP2PWallet);
 router.put('/approve-withdrawal/:transaction_id', Authenticated, approveWithdrawal);
 
 
-// router.get("/level-benefits/:member_id", getLevelBenefits);
+router.get("/level-benefits/:member_id", Authenticated, getMemberCommissionSummary);
+router.get("/level-benefits", Authenticated, getMemberCommissionSummary);
 // User-specific daily payout (requires member_id parameter)
 router.get("/daily-payout/:member_id", Authenticated, getDailyPayout);
 router.get("/roi/trigger/:member_id", Authenticated, triggerUserROI);

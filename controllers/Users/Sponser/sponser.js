@@ -7,27 +7,35 @@ const getSponsers = async (req, res) => {
     if (!memberId) {
       return res.status(400).json({ success: false, message: "Member ID is required" });
     }
-    const parentUser = await MemberModel.findOne(
-      { Member_id: memberId }
-    );
+    const parentUser = await MemberModel.findOne({
+      $or: [{ Member_id: memberId }, { member_id: memberId }]
+    });
 
     if (!parentUser) {
       return res.status(404).json({ success: false, message: "Parent user not found" });
     }
 
     const sponsoredUsers = await MemberModel.aggregate([
-      { $match: { Sponsor_code: memberId } },
+      { 
+        $match: { 
+          $or: [
+            { Sponsor_code: memberId },
+            { sponsor_id: memberId },
+            { introducer: memberId }
+          ]
+        } 
+      },
       {
         $project: {
           _id: 0,
-          Member_id: 1,
-          Name: 1,
+          Member_id: { $ifNull: ["$Member_id", "$member_id"] },
+          Name: { $ifNull: ["$Name", "$name"] },
           status: 1,
           Date_of_joining: 1,
-          profile_image: 1,
-          mobileno: 1,
-          Sponsor_code: 1,
-          Sponsor_name: 1,
+          profile_image: { $ifNull: ["$profile_image", "$member_image"] },
+          mobileno: { $ifNull: ["$mobileno", "$contactno"] },
+          Sponsor_code: { $ifNull: ["$Sponsor_code", "$sponsor_id", "$introducer"] },
+          Sponsor_name: { $ifNull: ["$Sponsor_name", "$introducer_name"] },
           wallet_balance: 1,
           total_team: 1,
           direct_referrals: 1

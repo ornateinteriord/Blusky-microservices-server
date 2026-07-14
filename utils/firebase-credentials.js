@@ -1,6 +1,6 @@
 module.exports = {
   "type": "service_account",
-  "project_id": "usdt-78547",
+  "project_id": "BMS-78547",
   "private_key_id": "578964b2f7e6244842d0bdf4e55c31a3381f5a7c",
   "private_key": "-----BEGIN PRIVATE KEY-----\n" +
     "MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC/2D7v6ogWyg3/\n" +
@@ -30,11 +30,11 @@ module.exports = {
     "YSEUfPyk4xu+Ti/Fx6f2fm+LW7Ia3PP6GowYQDRpEprE5XLMzCovMNDdKilF9uzh\n" +
     "tMsp1HFBdfXRlQORSUiRJiY=\n" +
     "-----END PRIVATE KEY-----\n",
-  "client_email": "firebase-adminsdk-fbsvc@usdt-78547.iam.gserviceaccount.com",
+  "client_email": "firebase-adminsdk-fbsvc@BMS-78547.iam.gserviceaccount.com",
   "client_id": "113907217730049983740",
   "auth_uri": "https://accounts.google.com/o/oauth2/auth",
   "token_uri": "https://oauth2.googleapis.com/token",
   "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40usdt-78547.iam.gserviceaccount.com",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-fbsvc%40BMS-78547.iam.gserviceaccount.com",
   "universe_domain": "googleapis.com"
 };

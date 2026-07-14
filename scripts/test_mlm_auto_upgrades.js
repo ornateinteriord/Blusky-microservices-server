@@ -15,7 +15,7 @@ const runTest = async () => {
     console.log("✅ MongoDB Connected Successfully\n");
 
     const testIds = ["SBA9900001", "SBA9900002", "SBA9900003", "SBA9900004", "SBA9900005", "SBA9900006"];
-    
+
     console.log("🧹 Cleaning up previous test records...");
     await MemberModel.deleteMany({ Member_id: { $in: testIds } });
     await AddOnPackageModel.deleteMany({ member_id: { $in: testIds } });
@@ -44,15 +44,15 @@ const runTest = async () => {
 
     // 2. Create 6 fake users in a sponsor chain with sequential timestamps
     // To test Single Leg Income (paid to earlier buyers of the same package):
-    // - User 1 has $60 package (created earliest)
-    // - User 2 has $120 package (created second)
-    // - When User 4 later upgrades to $60, User 1 gets Single Leg Income!
-    // - When User 5 later upgrades to $120, User 2 gets Single Leg Income!
+    // - User 1 has ₹60 package (created earliest)
+    // - User 2 has ₹120 package (created second)
+    // - When User 4 later upgrades to ₹60, User 1 gets Single Leg Income!
+    // - When User 5 later upgrades to ₹120, User 2 gets Single Leg Income!
     const baseTime = Date.now() - 3600000; // 1 hour ago
     const testUsersData = [
       {
         Member_id: "SBA9900001",
-        Name: "Fake User 1 ($60 Buyer)",
+        Name: "Fake User 1 (₹60 Buyer)",
         email: "fake1@test.com",
         mobileno: "9900000001",
         sponsor_id: rootMember.Member_id,
@@ -62,7 +62,7 @@ const runTest = async () => {
       },
       {
         Member_id: "SBA9900002",
-        Name: "Fake User 2 ($120 Buyer)",
+        Name: "Fake User 2 (₹120 Buyer)",
         email: "fake2@test.com",
         mobileno: "9900000002",
         sponsor_id: "SBA9900001",
@@ -72,7 +72,7 @@ const runTest = async () => {
       },
       {
         Member_id: "SBA9900003",
-        Name: "Fake User 3 ($30 Base)",
+        Name: "Fake User 3 (₹30 Base)",
         email: "fake3@test.com",
         mobileno: "9900000003",
         sponsor_id: "SBA9900002",
@@ -82,27 +82,27 @@ const runTest = async () => {
       },
       {
         Member_id: "SBA9900004",
-        Name: "Fake User 4 (Upgrade $63)",
+        Name: "Fake User 4 (Upgrade ₹63)",
         email: "fake4@test.com",
         mobileno: "9900000004",
         sponsor_id: "SBA9900003",
         package_value: 30,
-        upgrade_wallet: 63, // Next package is $60 -> should auto-upgrade!
+        upgrade_wallet: 63, // Next package is ₹60 -> should auto-upgrade!
         createdAt: new Date(baseTime + 4000)
       },
       {
         Member_id: "SBA9900005",
-        Name: "Fake User 5 (Upgrade $125)",
+        Name: "Fake User 5 (Upgrade ₹125)",
         email: "fake5@test.com",
         mobileno: "9900000005",
         sponsor_id: "SBA9900004",
         package_value: 60,
-        upgrade_wallet: 125, // Next package is $120 -> should auto-upgrade!
+        upgrade_wallet: 125, // Next package is ₹120 -> should auto-upgrade!
         createdAt: new Date(baseTime + 5000)
       },
       {
         Member_id: "SBA9900006",
-        Name: "Fake User 6 ($30 Base)",
+        Name: "Fake User 6 (₹30 Base)",
         email: "fake6@test.com",
         mobileno: "9900000006",
         sponsor_id: "SBA9900005",
@@ -123,7 +123,7 @@ const runTest = async () => {
         Sponsor_name: sponsor ? sponsor.Name : "Root",
         introducer: data.sponsor_id,
         introducer_name: sponsor ? sponsor.Name : "Root",
-        qr_code: `UWC-P2P:${data.Member_id}`,
+        qr_code: `BMS-P2P:${data.Member_id}`,
         wallet_balance: 0,
         top_up_wallet: 0
       };
@@ -149,7 +149,7 @@ const runTest = async () => {
       } catch (err) {
         // ignore if root referral fails
       }
-      console.log(`   + Created ${data.Member_id} (${data.Name.padEnd(26)}) | Pkg: $${data.package_value.toString().padEnd(3)} | Upgrade Wallet: $${data.upgrade_wallet}`);
+      console.log(`   + Created ${data.Member_id} (${data.Name.padEnd(26)}) | Pkg: ₹${data.package_value.toString().padEnd(3)} | Upgrade Wallet: ₹${data.upgrade_wallet}`);
     }
 
     console.log("\n=======================================================");
@@ -157,7 +157,7 @@ const runTest = async () => {
     console.log("=======================================================");
     for (let id of testIds) {
       let m = await MemberModel.findOne({ Member_id: id });
-      console.log(`${id.padEnd(11)} | Wallet: $${(m.wallet_balance||0).toFixed(2).padStart(6)} | Upgrade Wallet: $${(m.upgrade_wallet||0).toFixed(2).padStart(6)} | Package: $${m.package_value}`);
+      console.log(`${id.padEnd(11)} | Wallet: ₹${(m.wallet_balance||0).toFixed(2).padStart(6)} | Upgrade Wallet: ₹${(m.upgrade_wallet||0).toFixed(2).padStart(6)} | Package: ₹${m.package_value}`);
     }
 
     console.log("\n⚡ Triggering Auto Upgrade Process (processAutoUpgrades)...");
@@ -169,7 +169,7 @@ const runTest = async () => {
     console.log("=======================================================");
     for (let id of testIds) {
       let m = await MemberModel.findOne({ Member_id: id });
-      console.log(`${id.padEnd(11)} | Wallet: $${(m.wallet_balance||0).toFixed(2).padStart(6)} | Upgrade Wallet: $${(m.upgrade_wallet||0).toFixed(2).padStart(6)} | Package: $${m.package_value}`);
+      console.log(`${id.padEnd(11)} | Wallet: ₹${(m.wallet_balance||0).toFixed(2).padStart(6)} | Upgrade Wallet: ₹${(m.upgrade_wallet||0).toFixed(2).padStart(6)} | Package: ₹${m.package_value}`);
     }
 
     console.log("\n=======================================================");
@@ -180,7 +180,7 @@ const runTest = async () => {
       console.log("No transactions found.");
     } else {
       txs.forEach(tx => {
-        console.log(`[${tx.transaction_type.padEnd(24)}] Member: ${tx.member_id} | Amount: $${(tx.net_amount || tx.uw_debit || tx.ew_credit).toString().padEnd(5)} | Desc: ${tx.description}`);
+        console.log(`[${tx.transaction_type.padEnd(24)}] Member: ${tx.member_id} | Amount: ₹${(tx.net_amount || tx.uw_debit || tx.ew_credit).toString().padEnd(5)} | Desc: ${tx.description}`);
       });
     }
 

@@ -137,39 +137,39 @@ const updateInterest = async (req, res) => {
         const isObjectId = mongoose.Types.ObjectId.isValid(interestId);
         const query = {
             $or: [
-                { interest_id: interestId },
-                ...(isObjectId ? [{ _id: interestId }] : [])
-            ]
+    { interest_id: interestId },
+    ...(isObjectId ? [{ _id: interestId }] : [])
+]
         };
 
-        // Find interest
-        const interest = await InterestModel.findOne(query);
-        if (!interest) {
-            return res.status(404).json({
-                success: false,
-                message: "Interest not found"
-            });
-        }
+// Find interest
+const interest = await InterestModel.findOne(query);
+if (!interest) {
+    return res.status(404).json({
+        success: false,
+        message: "Interest not found"
+    });
+}
 
-        // Update the interest
-        const updatedInterest = await InterestModel.findOneAndUpdate(
-            query,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        );
+// Update the interest
+const updatedInterest = await InterestModel.findOneAndUpdate(
+    query,
+    { $set: updateData },
+    { new: true, runValidators: true }
+);
 
-        res.status(200).json({
-            success: true,
-            message: "Interest updated successfully",
-            data: updatedInterest
-        });
+res.status(200).json({
+    success: true,
+    message: "Interest updated successfully",
+    data: updatedInterest
+});
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to update interest",
-            error: error.message
-        });
-    }
+    res.status(500).json({
+        success: false,
+        message: "Failed to update interest",
+        error: error.message
+    });
+}
 };
 
 // Get a single interest by ID
@@ -182,30 +182,30 @@ const getInterestById = async (req, res) => {
 
         const interest = await InterestModel.findOne({
             $or: [
-                { interest_id: interestId },
-                ...(isObjectId ? [{ _id: interestId }] : [])
-            ]
+    { interest_id: interestId },
+    ...(isObjectId ? [{ _id: interestId }] : [])
+]
         });
 
-        if (!interest) {
-            return res.status(404).json({
-                success: false,
-                message: "Interest not found"
-            });
-        }
+if (!interest) {
+    return res.status(404).json({
+        success: false,
+        message: "Interest not found"
+    });
+}
 
-        res.status(200).json({
-            success: true,
-            message: "Interest fetched successfully",
-            data: interest
-        });
+res.status(200).json({
+    success: true,
+    message: "Interest fetched successfully",
+    data: interest
+});
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch interest",
-            error: error.message
-        });
-    }
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch interest",
+        error: error.message
+    });
+}
 };
 
 module.exports = {

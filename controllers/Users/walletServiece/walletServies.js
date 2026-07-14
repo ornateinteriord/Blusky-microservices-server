@@ -147,8 +147,8 @@ const getWalletOverview = async (req, res) => {
     );
 
     sliTransactions.forEach(tx => {
-      // Extract amount from description e.g., "Single Leg Income ($30) from U000002"
-      const match = tx.description?.match(/\(\$([\d.]+)\)/);
+      // Extract amount from description e.g., "Single Leg Income (₹30) from U000002"
+      const match = tx.description?.match(/\(\₹([\d.]+)\)/);
       if (match && match[1]) {
         const pkgVal = parseFloat(match[1]);
         if (!singleLevelIncomeByPackage[pkgVal]) {
@@ -197,8 +197,8 @@ const getWalletOverview = async (req, res) => {
         transactions: nonLoanTransactions.sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date)),
         calculation: {
           formula: "Available Balance = Sum of All Credits - Sum of All Debits (excluding loan and top-up transactions)",
-          breakdown: `$${completedAndPendingTx.reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0).toFixed(2)} - $${completedAndPendingTx.reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0).toFixed(2)} = $${Math.max(0, availableBalance).toFixed(2)}`,
-          note: "Available balance excludes loan and top-up transactions. Pending withdrawals: $" + pendingWithdrawals.toFixed(2)
+          breakdown: `₹${completedAndPendingTx.reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0).toFixed(2)} - ₹${completedAndPendingTx.reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0).toFixed(2)} = ₹${Math.max(0, availableBalance).toFixed(2)}`,
+          note: "Available balance excludes loan and top-up transactions. Pending withdrawals: ₹" + pendingWithdrawals.toFixed(2)
         },
       },
     });
@@ -353,7 +353,7 @@ const getWalletWithdraw = async (req, res) => {
     if (withdrawalAmount < 5) {
       return res.status(400).json({
         success: false,
-        message: "Minimum withdrawal amount is $5",
+        message: "Minimum withdrawal amount is ₹5",
         minimum: 5,
         loanStatus: {
           hasUnpaidLoan: hasUnpaidLoan,
@@ -366,11 +366,11 @@ const getWalletWithdraw = async (req, res) => {
     if (withdrawalAmount > maxWithdrawal) {
       return res.status(400).json({
         success: false,
-        message: `Maximum withdrawal limit is $${maxWithdrawal.toFixed(2)} (25% of your total package amount)`,
+        message: `Maximum withdrawal limit is ₹${maxWithdrawal.toFixed(2)} (25% of your total package amount)`,
         loanStatus: {
           hasUnpaidLoan: hasUnpaidLoan,
           isWithdrawalAllowed: false,
-          message: `Limit exceeded. Maximum allowed: $${maxWithdrawal.toFixed(2)}`
+          message: `Limit exceeded. Maximum allowed: ₹${maxWithdrawal.toFixed(2)}`
         }
       });
     }
@@ -497,9 +497,9 @@ const getWalletWithdraw = async (req, res) => {
         },
         status: "Pending",
         calculation: {
-          deduction: `5% of $${withdrawalAmount.toFixed(2)} = $${deduction.toFixed(2)}`,
-          netAmount: `$${withdrawalAmount.toFixed(2)} - $${deduction.toFixed(2)} = $${netAmount.toFixed(2)}`,
-          balanceUpdate: `$${availableBalance.toFixed(2)} - $${withdrawalAmount.toFixed(2)} = $${newAvailableBalance.toFixed(2)}`
+          deduction: `5% of ₹${withdrawalAmount.toFixed(2)} = ₹${deduction.toFixed(2)}`,
+          netAmount: `₹${withdrawalAmount.toFixed(2)} - ₹${deduction.toFixed(2)} = ₹${netAmount.toFixed(2)}`,
+          balanceUpdate: `₹${availableBalance.toFixed(2)} - ₹${withdrawalAmount.toFixed(2)} = ₹${newAvailableBalance.toFixed(2)}`
         },
         note: "Your available balance excludes loan transactions and includes this pending withdrawal."
       },
@@ -582,11 +582,11 @@ const sendWithdrawalOTP = async (req, res) => {
     const maxWithdrawal = totalPackages * 0.25;
 
     if (withdrawalAmount < 5) {
-      return res.status(400).json({ success: false, message: "Minimum withdrawal amount is $5" });
+      return res.status(400).json({ success: false, message: "Minimum withdrawal amount is ₹5" });
     }
 
     if (withdrawalAmount > maxWithdrawal) {
-      return res.status(400).json({ success: false, message: `Maximum withdrawal limit is $${maxWithdrawal.toFixed(2)} (25% of your total package amount)` });
+      return res.status(400).json({ success: false, message: `Maximum withdrawal limit is ₹${maxWithdrawal.toFixed(2)} (25% of your total package amount)` });
     }
 
     if (hasUnpaidLoan) {
@@ -601,9 +601,9 @@ const sendWithdrawalOTP = async (req, res) => {
     const otp = generateOTP();
     storeOTP(member.email, otp);
 
-    const bmsLogoPath = path.join(__dirname, '..', '..', '..', 'utils', 'USDT.png');
+    const bmsLogoPath = path.join(__dirname, '..', '..', '..', 'utils', 'BMS.png');
     const attachments = [{
-      filename: 'USDT.png',
+      filename: 'BMS.png',
       path: bmsLogoPath,
       cid: 'bmslogo'
     }];
@@ -611,7 +611,7 @@ const sendWithdrawalOTP = async (req, res) => {
     const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
       <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="UWC+ Logo" style="max-width: 120px; height: auto;" />
+        <img src="cid:bmslogo" alt="BMS Logo" style="max-width: 120px; height: auto;" />
       </div>
       <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
         <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Withdrawal Verification</h2>
@@ -619,7 +619,7 @@ const sendWithdrawalOTP = async (req, res) => {
           Dear <strong style="color: #fbbf24;">${member.Name || 'Member'}</strong>,
         </p>
         <p style="color: #ffffff; font-size: 16px; line-height: 1.6; margin-bottom: 25px;">
-          You have requested to withdraw <strong>$${withdrawalAmount.toFixed(2)}</strong> from your wallet. 
+          You have requested to withdraw <strong>₹${withdrawalAmount.toFixed(2)}</strong> from your wallet. 
           Please use the following OTP to authorize and complete this transaction:
         </p>
         <div style="background-color: #374151; border-left: 4px solid #fbbf24; padding: 20px; margin: 25px 0; border-radius: 4px; text-align: center;">
@@ -630,11 +630,11 @@ const sendWithdrawalOTP = async (req, res) => {
         </p>
       </div>
       <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} UWC+. All rights reserved.
+        &copy; ${new Date().getFullYear()} BMS. All rights reserved.
       </div>
     </div>`;
 
-    await sendMail(member.email, "UWC+ - Withdrawal Verification OTP", htmlContent, `Your OTP is ${otp}`, attachments);
+    await sendMail(member.email, "BMS - Withdrawal Verification OTP", htmlContent, `Your OTP is ${otp}`, attachments);
 
     return res.status(200).json({ success: true, message: "OTP sent to your registered email" });
   } catch (error) {
@@ -803,7 +803,7 @@ const lookupMemberForTransfer = async (req, res) => {
     if (!query) {
       return res.status(400).json({ success: false, message: "Query parameter required" });
     }
-    let cleanQuery = query.replace(/^UWC-P2P:/i, "").trim();
+    let cleanQuery = query.replace(/^BMS-P2P:/i, "").trim();
 
     const member = await MemberModel.findOne({
       $or: [
@@ -826,7 +826,7 @@ const lookupMemberForTransfer = async (req, res) => {
         email: member.email,
         mobileno: member.mobileno ? String(member.mobileno).replace(/.(?=.{4})/g, '*') : 'N/A',
         profile_image: member.profile_image,
-        qr_code: member.qr_code || `UWC-P2P:${member.Member_id || member.member_id}`
+        qr_code: member.qr_code || `BMS-P2P:${member.Member_id || member.member_id}`
       }
     });
   } catch (error) {
@@ -857,7 +857,7 @@ const transferP2PWallet = async (req, res) => {
       return res.status(404).json({ success: false, message: "Sender member not found" });
     }
 
-    let cleanReceiver = receiverId.replace(/^UWC-P2P:/i, "").trim();
+    let cleanReceiver = receiverId.replace(/^BMS-P2P:/i, "").trim();
     const receiverMember = await MemberModel.findOne({
       $or: [
         { Member_id: cleanReceiver },
@@ -971,7 +971,7 @@ const transferP2PWallet = async (req, res) => {
 
     await MemberModel.findOneAndUpdate({ Member_id: receiverMember.Member_id }, { $inc: { top_up_wallet: transferAmount } });
 
-    return res.status(200).json({ success: true, message: `Successfully transferred $${transferAmount} to ${receiverMember.Name}!` });
+    return res.status(200).json({ success: true, message: `Successfully transferred ₹${transferAmount} to ${receiverMember.Name}!` });
   } catch (error) {
     console.error("Error in transferP2PWallet:", error);
     return res.status(500).json({ success: false, message: "Server error during P2P transfer", error: error.message });

@@ -65,93 +65,93 @@ const createReceipt = async (req, res) => {
             // The frontend sends _id as account_id, so we check both
             const existingAccount = await AccountsModel.findOne({ 
                 $or: [
-                    { _id: mongoose.Types.ObjectId.isValid(account_details.account_id) ? account_details.account_id : null },
-                    { account_id: account_details.account_id }
-                ].filter(Boolean)
+    { _id: mongoose.Types.ObjectId.isValid(account_details.account_id) ? account_details.account_id : null },
+    { account_id: account_details.account_id }
+].filter(Boolean)
             });
 
-            if (!existingAccount) {
-                console.log(`❌ Account not found: ${account_details.account_id}`);
-                return res.status(400).json({
-                    success: false,
-                    message: `Account not found: ${account_details.account_id}`
-                });
-            } else {
-                console.log(`📊 Existing account balance: ${existingAccount.account_amount}`);
+if (!existingAccount) {
+    console.log(`❌ Account not found: ${account_details.account_id}`);
+    return res.status(400).json({
+        success: false,
+        message: `Account not found: ${account_details.account_id}`
+    });
+} else {
+    console.log(`📊 Existing account balance: ${existingAccount.account_amount}`);
 
-                // If account_amount is null, set it to 0 first
-                if (existingAccount.account_amount === null || existingAccount.account_amount === undefined) {
-                    await AccountsModel.updateOne(
-                        { _id: existingAccount._id },
-                        { $set: { account_amount: 0 } }
-                    );
-                    console.log(`🔧 Initialized null account_amount to 0`);
-                }
+    // If account_amount is null, set it to 0 first
+    if (existingAccount.account_amount === null || existingAccount.account_amount === undefined) {
+        await AccountsModel.updateOne(
+            { _id: existingAccount._id },
+            { $set: { account_amount: 0 } }
+        );
+        console.log(`🔧 Initialized null account_amount to 0`);
+    }
 
-                // Update account balance - ADD money for receipt
-                const account = await AccountsModel.findOneAndUpdate(
-                    { _id: existingAccount._id },
-                    { $inc: { account_amount: amount } },
-                    { new: true }
-                );
+    // Update account balance - ADD money for receipt
+    const account = await AccountsModel.findOneAndUpdate(
+        { _id: existingAccount._id },
+        { $inc: { account_amount: amount } },
+        { new: true }
+    );
 
-                if (account) {
-                    console.log(`✅ Account updated. New balance: ${account.account_amount}`);
+    if (account) {
+        console.log(`✅ Account updated. New balance: ${account.account_amount}`);
 
-                    // Generate unique transaction ID using utility
-                    const transId = await generateTransactionId();
-                    console.log(`🔑 Generated transaction ID: ${transId}`);
+        // Generate unique transaction ID using utility
+        const transId = await generateTransactionId();
+        console.log(`🔑 Generated transaction ID: ${transId}`);
 
-                    // Create transaction record
-                    const transaction = await TransactionModel.create({
-                        transaction_id: transId,
-                        transaction_date: receipt_date || new Date(),
-                        member_id: member_id,
-                        account_number: account_details.account_no,
-                        account_type: account_details.account_type,
-                        transaction_type: "Receipt",
-                        description: receipt_details || `Receipt - ${newReceiptId}`,
-                        credit: amount,
-                        debit: 0,
-                        balance: account.account_amount,
-                        Name: received_from,
-                        status: "Completed",
-                        reference_no: newReceiptId,
-                        collected_by: entered_by
-                    });
+        // Create transaction record
+        const transaction = await TransactionModel.create({
+            transaction_id: transId,
+            transaction_date: receipt_date || new Date(),
+            member_id: member_id,
+            account_number: account_details.account_no,
+            account_type: account_details.account_type,
+            transaction_type: "Receipt",
+            description: receipt_details || `Receipt - ${newReceiptId}`,
+            credit: amount,
+            debit: 0,
+            balance: account.account_amount,
+            Name: received_from,
+            status: "Completed",
+            reference_no: newReceiptId,
+            collected_by: entered_by
+        });
 
-                    // Process commission for introducers
-                    try {
-                        console.log("💰 Processing commission for admin receipt...");
-                        const commissionResult = await processTransactionCommission(transaction);
-                        console.log("💰 Commission processing result:", commissionResult);
-                    } catch (commissionError) {
-                        console.error("❌ Commission processing error:", commissionError.message);
-                        // Don't fail the receipt if commission fails
-                    }
-
-                    console.log(`📝 Transaction created: ${transaction.transaction_id}`);
-                } else {
-                    console.log(`❌ Failed to update account balance`);
-                }
-            }
-        } else {
-            console.log(`ℹ️ Receipt: No account update needed. account_details: ${JSON.stringify(account_details)}, amount: ${amount}`);
+        // Process commission for introducers
+        try {
+            console.log("💰 Processing commission for admin receipt...");
+            const commissionResult = await processTransactionCommission(transaction);
+            console.log("💰 Commission processing result:", commissionResult);
+        } catch (commissionError) {
+            console.error("❌ Commission processing error:", commissionError.message);
+            // Don't fail the receipt if commission fails
         }
 
-        res.status(201).json({
-            success: true,
-            message: "Receipt created successfully",
-            data: newReceipt
-        });
-    } catch (error) {
-        console.error("Error creating receipt:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to create receipt",
-            error: error.message
-        });
+        console.log(`📝 Transaction created: ${transaction.transaction_id}`);
+    } else {
+        console.log(`❌ Failed to update account balance`);
     }
+}
+        } else {
+    console.log(`ℹ️ Receipt: No account update needed. account_details: ${JSON.stringify(account_details)}, amount: ${amount}`);
+}
+
+res.status(201).json({
+    success: true,
+    message: "Receipt created successfully",
+    data: newReceipt
+});
+    } catch (error) {
+    console.error("Error creating receipt:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to create receipt",
+        error: error.message
+    });
+}
 };
 
 // Get all receipts with pagination and filtering

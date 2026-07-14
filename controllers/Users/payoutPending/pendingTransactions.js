@@ -8,7 +8,7 @@ const MemberModel = require("../../../models/Users/Member");
 const getPendingTransactions = async (req, res) => {
   try {
     // Step 1: Get all pending transactions
-    const {status} = req.params;
+    const { status } = req.params;
     const pendingTransactions = await TransactionModel.find({ status });
 
     if (!pendingTransactions.length) {
@@ -50,9 +50,9 @@ const getPendingTransactions = async (req, res) => {
 const approveWithdrawal = async (req, res) => {
   try {
     const { transaction_id } = req.params;
-    
+
     // Find specific pending withdrawal transaction
-    const transaction = await TransactionModel.findOne({ 
+    const transaction = await TransactionModel.findOne({
       transaction_id: transaction_id,
       status: { $in: ['Pending', 'Processing'] }
     });

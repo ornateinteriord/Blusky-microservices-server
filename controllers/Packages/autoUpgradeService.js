@@ -48,7 +48,7 @@ const processAutoUpgrades = async () => {
       }
 
       // Process Upgrade
-      console.log(`[Auto-Upgrade] Member ${member.Member_id} upgrading to $${nextPackageAmount}`);
+      console.log(`[Auto-Upgrade] Member ${member.Member_id} upgrading to ₹${nextPackageAmount}`);
 
       const requested_amount = nextPackageAmount;
       const finalTargetId = member.Member_id;
@@ -74,7 +74,7 @@ const processAutoUpgrades = async () => {
         member_id: member.Member_id,
         Name: member.Name,
         mobileno: member.mobileno,
-        description: `Auto Upgrade Package Purchase ($${requested_amount})`,
+        description: `Auto Upgrade Package Purchase (₹${requested_amount})`,
         transaction_type: "Upgrade Wallet Deduction",
         ew_credit: 0,
         ew_debit: 0,
@@ -106,33 +106,33 @@ const processAutoUpgrades = async () => {
 
       // 4. Single Leg Income Logic
       const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(4));
-      
+
       if (singleLineIncomeAmount > 0) {
         const earningsAmount = Number((singleLineIncomeAmount / 2).toFixed(4));
         const upgradeAmount = Number((singleLineIncomeAmount - earningsAmount).toFixed(4));
 
         try {
-          const primaryBuyers = await MemberModel.find({ 
-            package_value: { $in: [requested_amount, requested_amount.toString()] }, 
-            Member_id: { $ne: finalTargetId } 
+          const primaryBuyers = await MemberModel.find({
+            package_value: { $in: [requested_amount, requested_amount.toString()] },
+            Member_id: { $ne: finalTargetId }
           }).select('Member_id Name mobileno createdAt').lean();
-          
-          const addonBuyers = await AddOnPackageModel.find({ 
-            amount: { $in: [requested_amount, requested_amount.toString()] }, 
-            member_id: { $ne: finalTargetId } 
+
+          const addonBuyers = await AddOnPackageModel.find({
+            amount: { $in: [requested_amount, requested_amount.toString()] },
+            member_id: { $ne: finalTargetId }
           }).select('member_id createdAt').lean();
-          
+
           const targetMemberTime = new Date(member.createdAt).getTime();
           const targetMemberId = member.Member_id;
           const eligibleMap = new Map();
-          
+
           for (const buyer of primaryBuyers) {
             const buyerTime = new Date(buyer.createdAt).getTime();
             if ((buyerTime < targetMemberTime || (buyerTime === targetMemberTime && buyer.Member_id < targetMemberId)) && !eligibleMap.has(buyer.Member_id)) {
               eligibleMap.set(buyer.Member_id, { id: buyer.Member_id, name: buyer.Name, phone: buyer.mobileno, time: buyerTime });
             }
           }
-          
+
           for (const addon of addonBuyers) {
             if (!eligibleMap.has(addon.member_id)) {
               const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Member_id Name mobileno createdAt').lean();
@@ -144,7 +144,7 @@ const processAutoUpgrades = async () => {
               }
             }
           }
-          
+
           let eligibleMembers = Array.from(eligibleMap.values());
           eligibleMembers.sort((a, b) => a.time - b.time);
           const finalEligibleMembers = eligibleMembers.slice(-100);
@@ -156,7 +156,7 @@ const processAutoUpgrades = async () => {
               member_id: emember.id,
               Name: emember.name,
               mobileno: emember.phone,
-              description: `Single Leg Income ($${requested_amount}) from ${finalTargetId} (Auto Upgrade)`,
+              description: `Single Leg Income (₹${requested_amount}) from ${finalTargetId} (Auto Upgrade)`,
               transaction_type: "Single Leg Income",
               ew_credit: earningsAmount.toString(),
               uw_credit: upgradeAmount.toString(),
@@ -165,7 +165,7 @@ const processAutoUpgrades = async () => {
               net_amount: singleLineIncomeAmount,
               gross_amount: singleLineIncomeAmount
             });
-            
+
             await sliTransaction.save();
 
             await MemberModel.findOneAndUpdate(
@@ -183,7 +183,7 @@ const processAutoUpgrades = async () => {
         const commissions = await mlmService.calculateCommissions(
           finalTargetId,
           member.sponsor_id,
-          requested_amount, 
+          requested_amount,
           "Add-On"
         );
         if (commissions.length > 0) {

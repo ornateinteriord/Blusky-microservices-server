@@ -5,7 +5,7 @@
 
 // Base email styling with modern design
 const getEmailWrapper = (content) => {
-    return `
+  return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -50,13 +50,13 @@ const getEmailWrapper = (content) => {
 
 // Info box component
 const getInfoBox = (title, items) => {
-    const itemsHtml = items.map(item => `
+  const itemsHtml = items.map(item => `
     <p style="margin: 8px 0; color: #374151;">
       <strong style="color: #6567df;">${item.label}:</strong> ${item.value}
     </p>
   `).join('');
 
-    return `
+  return `
     <div style="background: linear-gradient(135deg, rgba(101, 103, 223, 0.05) 0%, rgba(126, 34, 206, 0.05) 100%); 
                 border-left: 4px solid #6567df; 
                 padding: 20px; 
@@ -71,7 +71,7 @@ const getInfoBox = (title, items) => {
 
 // Success alert component
 const getSuccessAlert = (message) => {
-    return `
+  return `
     <div style="background-color: #ecfdf5; 
                 border-left: 4px solid #10b981; 
                 padding: 16px 20px; 
@@ -86,7 +86,7 @@ const getSuccessAlert = (message) => {
 
 // Warning alert component
 const getWarningAlert = (message) => {
-    return `
+  return `
     <div style="background-color: #fef3c7; 
                 border-left: 4px solid #f59e0b; 
                 padding: 16px 20px; 
@@ -101,7 +101,7 @@ const getWarningAlert = (message) => {
 
 // Error alert component
 const getErrorAlert = (message) => {
-    return `
+  return `
     <div style="background-color: #fee2e2; 
                 border-left: 4px solid #ef4444; 
                 padding: 16px 20px; 
@@ -116,7 +116,7 @@ const getErrorAlert = (message) => {
 
 // 1. KYC Submitted Email
 const generateKYCSubmittedEmail = (name, memberId) => {
-    const content = `
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
@@ -143,16 +143,16 @@ const generateKYCSubmittedEmail = (name, memberId) => {
     </p>
   `;
 
-    return {
-        subject: 'MSI - KYC Submitted Successfully',
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Your KYC details have been successfully submitted for Member ID: ${memberId}. Our team will verify your documents and you will receive a confirmation email once approved.`
-    };
+  return {
+    subject: 'MSI - KYC Submitted Successfully',
+    html: getEmailWrapper(content),
+    text: `Dear ${name}, Your KYC details have been successfully submitted for Member ID: ${memberId}. Our team will verify your documents and you will receive a confirmation email once approved.`
+  };
 };
 
 // 2. KYC Approved Email
 const generateKYCApprovedEmail = (name, memberId) => {
-    const content = `
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
@@ -199,16 +199,16 @@ const generateKYCApprovedEmail = (name, memberId) => {
     </p>
   `;
 
-    return {
-        subject: 'MSI - KYC Approved! Account Activated',
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Congratulations! Your KYC verification has been approved for Member ID: ${memberId}. Your account is now fully activated and you can access all features.`
-    };
+  return {
+    subject: 'MSI - KYC Approved! Account Activated',
+    html: getEmailWrapper(content),
+    text: `Dear ${name}, Congratulations! Your KYC verification has been approved for Member ID: ${memberId}. Your account is now fully activated and you can access all features.`
+  };
 };
 
 // 3. KYC Failed Email
 const generateKYCFailedEmail = (name, memberId, reason) => {
-    const content = `
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
@@ -247,16 +247,16 @@ const generateKYCFailedEmail = (name, memberId, reason) => {
     </p>
   `;
 
-    return {
-        subject: 'MSI - KYC Verification Failed',
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Your KYC verification for Member ID: ${memberId} could not be completed. Reason: ${reason || 'Bank verification failed'}. Please review your details and submit again.`
-    };
+  return {
+    subject: 'MSI - KYC Verification Failed',
+    html: getEmailWrapper(content),
+    text: `Dear ${name}, Your KYC verification for Member ID: ${memberId} could not be completed. Reason: ${reason || 'Bank verification failed'}. Please review your details and submit again.`
+  };
 };
 
 // 4. Password Updated Email
 const generatePasswordUpdatedEmail = (name, memberId) => {
-    const content = `
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
@@ -298,38 +298,38 @@ const generatePasswordUpdatedEmail = (name, memberId) => {
     </p>
   `;
 
-    return {
-        subject: 'MSI - Password Updated Successfully',
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Your account password for Member ID: ${memberId} has been updated on ${new Date().toLocaleString('en-IN')}. If you did not make this change, please contact support immediately.`
-    };
+  return {
+    subject: 'MSI - Password Updated Successfully',
+    html: getEmailWrapper(content),
+    text: `Dear ${name}, Your account password for Member ID: ${memberId} has been updated on ${new Date().toLocaleString('en-IN')}. If you did not make this change, please contact support immediately.`
+  };
 };
 
 // 5. Bank Account Created Email
 const generateAccountCreatedEmail = (name, memberId, accountType, accountNo, interestRate, maturityDate) => {
-    const accountDetails = [
-        { label: 'Account Type', value: accountType },
-        { label: 'Account Number', value: accountNo },
-        { label: 'Member ID', value: memberId }
-    ];
+  const accountDetails = [
+    { label: 'Account Type', value: accountType },
+    { label: 'Account Number', value: accountNo },
+    { label: 'Member ID', value: memberId }
+  ];
 
-    if (interestRate && interestRate > 0) {
-        accountDetails.push({ label: 'Interest Rate', value: `${interestRate}% per annum` });
-    }
+  if (interestRate && interestRate > 0) {
+    accountDetails.push({ label: 'Interest Rate', value: `${interestRate}% per annum` });
+  }
 
-    if (maturityDate) {
-        accountDetails.push({
-            label: 'Maturity Date',
-            value: new Date(maturityDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
-        });
-    }
-
+  if (maturityDate) {
     accountDetails.push({
-        label: 'Opened On',
-        value: new Date().toLocaleDateString('en-IN', { dateStyle: 'full' })
+      label: 'Maturity Date',
+      value: new Date(maturityDate).toLocaleDateString('en-IN', { dateStyle: 'long' })
     });
+  }
 
-    const content = `
+  accountDetails.push({
+    label: 'Opened On',
+    value: new Date().toLocaleDateString('en-IN', { dateStyle: 'full' })
+  });
+
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
@@ -364,18 +364,18 @@ const generateAccountCreatedEmail = (name, memberId, accountType, accountNo, int
     </p>
   `;
 
-    return {
-        subject: `MSI - ${accountType} Account Created Successfully`,
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Your ${accountType} account (${accountNo}) has been successfully created. Member ID: ${memberId}. ${interestRate ? `Interest Rate: ${interestRate}%` : ''}`
-    };
+  return {
+    subject: `MSI - ${accountType} Account Created Successfully`,
+    html: getEmailWrapper(content),
+    text: `Dear ${name}, Your ${accountType} account (${accountNo}) has been successfully created. Member ID: ${memberId}. ${interestRate ? `Interest Rate: ${ interestRate }% ` : ''}`
+};
 };
 
 // 6. Transaction Completed Email
 const generateTransactionEmail = (name, memberId, transactionId, accountNo, accountType, type, amount, balance, description) => {
-    const isCredit = type.toLowerCase() === 'credit';
+  const isCredit = type.toLowerCase() === 'credit';
 
-    const content = `
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
@@ -388,16 +388,16 @@ const generateTransactionEmail = (name, memberId, transactionId, accountNo, acco
         { label: 'Transaction ID', value: transactionId },
         { label: 'Account Number', value: accountNo },
         { label: 'Account Type', value: accountType },
-        { label: 'Transaction Type', value: `<span style="color: ${isCredit ? '#10b981' : '#ef4444'};">${isCredit ? '↓ Credit' : '↑ Debit'}</span>` },
-        { label: 'Amount', value: `$${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
-        { label: 'New Balance', value: `$${parseFloat(balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+        { label: 'Transaction Type', value: `< span style = "color: ${isCredit ? '#10b981' : '#ef4444'};" >${ isCredit ?'↓ Credit': '↑ Debit'}</span> ` },
+        { label: 'Amount', value: `₹${ parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } ` },
+        { label: 'New Balance', value: `₹${ parseFloat(balance).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) } ` },
         { label: 'Description', value: description || 'N/A' },
         { label: 'Date & Time', value: new Date().toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' }) }
     ])}
 
     ${isCredit ?
-            getSuccessAlert(`Amount of $${parseFloat(amount).toLocaleString('en-IN')} has been credited to your account.`) :
-            getWarningAlert(`Amount of $${parseFloat(amount).toLocaleString('en-IN')} has been debited from your account.`)
+            getSuccessAlert(`Amount of ₹${ parseFloat(amount).toLocaleString('en-IN') } has been credited to your account.`) :
+            getWarningAlert(`Amount of ₹${ parseFloat(amount).toLocaleString('en-IN') } has been debited from your account.`)
         }
 
     <p style="color: #374151; font-size: 15px; line-height: 1.6;">
@@ -410,18 +410,18 @@ const generateTransactionEmail = (name, memberId, transactionId, accountNo, acco
     </p>
   `;
 
-    return {
-        subject: `MSI - Transaction ${isCredit ? 'Credit' : 'Debit'} Alert`,
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Transaction ${transactionId}: $${amount} ${isCredit ? 'credited to' : 'debited from'} your account ${accountNo}. New balance: $${balance}.`
-    };
+  return {
+    subject: `MSI - Transaction ${isCredit ? 'Credit' : 'Debit'} Alert`,
+    html: getEmailWrapper(content),
+    text: `Dear ${name}, Transaction ${transactionId}: ₹${amount} ${isCredit ? 'credited to' : 'debited from'} your account ${accountNo}. New balance: ₹${balance}.`
+  };
 };
 
 // 7. Withdrawal Processed Email
 const generateWithdrawalEmail = (name, memberId, transactionId, accountNo, amount, status) => {
-    const isSuccess = status.toLowerCase() === 'success' || status.toLowerCase() === 'completed';
+  const isSuccess = status.toLowerCase() === 'success' || status.toLowerCase() === 'completed';
 
-    const content = `
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
@@ -442,7 +442,8 @@ const generateWithdrawalEmail = (name, memberId, transactionId, accountNo, amoun
             { label: 'Transaction ID', value: transactionId },
             { label: 'Member ID', value: memberId },
             { label: 'Account Number', value: accountNo },
-            { label: 'Amount', value: `$${parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+            { label: 'Amount', value: `₹${ parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}` },
             { label: 'Status', value: isSuccess ? '<span style="color: #10b981;">✓ Completed</span>' : '<span style="color: #f59e0b;">⏳ Processing</span>' },
             { label: 'Date & Time', value: new Date().toLocaleString('en-IN', { dateStyle: 'full', timeStyle: 'short' }) }
         ])}
@@ -460,29 +461,30 @@ const generateWithdrawalEmail = (name, memberId, transactionId, accountNo, amoun
     </p>
   `;
 
-    return {
-        subject: `MSI - Withdrawal ${isSuccess ? 'Completed' : 'Processing'}`,
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Your withdrawal request of $${amount} for account ${accountNo} is ${isSuccess ? 'completed' : 'being processed'}. Transaction ID: ${transactionId}.`
-    };
+return {
+  subject: `MSI - Withdrawal ${isSuccess ? 'Completed' : 'Processing'}`,
+  html: getEmailWrapper(content),
+  text: `Dear ${name}, Your withdrawal request of ₹${amount} for account ${accountNo} is ${isSuccess ? 'completed' : 'being processed'}. Transaction ID: ${transactionId}.`
+};
 };
 
 // 8. Welcome Email (Member/Agent Registration)
 const generateWelcomeEmail = (name, userId, password, role = 'Member') => {
-    const content = `
+  const content = `
     <p style="color: #374151; font-size: 16px; line-height: 1.6;">
       Dear <strong style="color: #6567df;">${name}</strong>,
     </p>
 
-    ${getSuccessAlert(`Welcome to Manipal Society! Your ${role.toLowerCase()} account has been created.`)}
+    ${getSuccessAlert(`Welcome to Manipal Society! Your ${ role.toLowerCase()
+} account has been created.`)}
 
     <p style="color: #374151; font-size: 15px; line-height: 1.6;">
       Your account has been successfully registered with Manipal Society. Below are your login credentials:
     </p>
 
     ${getInfoBox('Login Credentials', [
-        { label: `${role} ID`, value: `<strong style="color: #6567df; font-size: 18px;">${userId}</strong>` },
-        { label: 'Password', value: `<strong style="color: #6567df; font-size: 18px;">${password}</strong>` },
+        { label: `${ role } ID`, value: ` < strong style = "color: #6567df; font-size: 18px;" >${ userId }</strong > ` },
+        { label: 'Password', value: `< strong style = "color: #6567df; font-size: 18px;" >${ password }</strong > ` },
         { label: 'Registration Date', value: new Date().toLocaleDateString('en-IN', { dateStyle: 'full' }) }
     ])}
 
@@ -515,20 +517,20 @@ const generateWelcomeEmail = (name, userId, password, role = 'Member') => {
     </p>
   `;
 
-    return {
-        subject: `MSI - Welcome! Your ${role} Account is Ready`,
-        html: getEmailWrapper(content),
-        text: `Dear ${name}, Welcome to Manipal Society! Your ${role} account has been created. ${role} ID: ${userId}, Password: ${password}. Please login and change your password immediately.`
-    };
+return {
+  subject: `MSI - Welcome! Your ${role} Account is Ready`,
+  html: getEmailWrapper(content),
+  text: `Dear ${name}, Welcome to Manipal Society! Your ${role} account has been created. ${role} ID: ${userId}, Password: ${password}. Please login and change your password immediately.`
+};
 };
 
 module.exports = {
-    generateKYCSubmittedEmail,
-    generateKYCApprovedEmail,
-    generateKYCFailedEmail,
-    generatePasswordUpdatedEmail,
-    generateAccountCreatedEmail,
-    generateTransactionEmail,
-    generateWithdrawalEmail,
-    generateWelcomeEmail
+  generateKYCSubmittedEmail,
+  generateKYCApprovedEmail,
+  generateKYCFailedEmail,
+  generatePasswordUpdatedEmail,
+  generateAccountCreatedEmail,
+  generateTransactionEmail,
+  generateWithdrawalEmail,
+  generateWelcomeEmail
 };

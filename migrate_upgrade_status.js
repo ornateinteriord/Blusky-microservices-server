@@ -28,12 +28,12 @@ const migrate = async () => {
       $set: { upgrade_status: "Active" }
     });
 
-    console.log(`✅ Successfully updated ${result.modifiedCount} members to 'Active'.`);
-    process.exit(0);
+console.log(`✅ Successfully updated ${result.modifiedCount} members to 'Active'.`);
+process.exit(0);
   } catch (error) {
-    console.error("❌ Migration failed:", error);
-    process.exit(1);
-  }
+  console.error("❌ Migration failed:", error);
+  process.exit(1);
+}
 };
 
 migrate();

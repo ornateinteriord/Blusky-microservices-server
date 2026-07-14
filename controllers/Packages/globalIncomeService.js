@@ -18,7 +18,7 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
     const lastQueueEntry = await GlobalIncomeQueue.findOne({ package_amount: amount })
       .sort({ queue_index: -1 })
       .exec();
-    
+
     let newQueueIndex = 1;
     if (lastQueueEntry && lastQueueEntry.queue_index) {
       newQueueIndex = lastQueueEntry.queue_index + 1;
@@ -32,7 +32,7 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
     });
     await newEntry.save();
 
-    console.log(`[GlobalIncome] Member ${memberId} added to queue for $${amount} at index ${newQueueIndex}`);
+    console.log(`[GlobalIncome] Member ${memberId} added to queue for ₹${amount} at index ${newQueueIndex}`);
 
     // Intervals: 125th, 150th, 175th, 200th, 225th, 250th, 275th relative purchase.
     // That means the difference between current index and beneficiary index is interval - 1.
@@ -52,12 +52,12 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
 
     for (const interval of payoutIntervals) {
       const targetQueueIndex = newQueueIndex - interval.diff;
-      
+
       // If the target index is valid (>= 1), we find the beneficiary
       if (targetQueueIndex >= 1) {
-        const beneficiaryEntry = await GlobalIncomeQueue.findOne({ 
-          package_amount: amount, 
-          queue_index: targetQueueIndex 
+        const beneficiaryEntry = await GlobalIncomeQueue.findOne({
+          package_amount: amount,
+          queue_index: targetQueueIndex
         });
 
         if (beneficiaryEntry && beneficiaryEntry.member_id) {
@@ -67,42 +67,42 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
           await MemberModel.findOneAndUpdate(
             { Member_id: beneficiaryId },
             { 
-              $inc: { 
-                wallet_balance: ewCredit,
-                upgrade_wallet_balance: uwCredit,
-                global_income: totalPayoutAmount
-              } 
+              $inc: {
+  wallet_balance: ewCredit,
+    upgrade_wallet_balance: uwCredit,
+      global_income: totalPayoutAmount
+} 
             }
           );
 
-          // Generate a fast random txId to prevent DB bottlenecks
-          const txId = "GI" + Date.now().toString() + Math.floor(1000 + Math.random() * 9000).toString();
+// Generate a fast random txId to prevent DB bottlenecks
+const txId = "GI" + Date.now().toString() + Math.floor(1000 + Math.random() * 9000).toString();
 
-          // Record the transaction
-          const transaction = new TransactionModel({
-            transaction_id: txId,
-            transaction_date: new Date(),
-            member_id: beneficiaryId,
-            description: `Global Income ($${amount}) from ${memberId} (Payout ${interval.payoutNum}/7)`,
-            transaction_type: "Global Income",
-            ew_credit: ewCredit,
-            ew_debit: 0,
-            uw_credit: uwCredit,
-            uw_debit: 0,
-            status: "Completed",
-            net_amount: totalPayoutAmount,
-            gross_amount: totalPayoutAmount
-          });
-          
-          await transaction.save();
+// Record the transaction
+const transaction = new TransactionModel({
+  transaction_id: txId,
+  transaction_date: new Date(),
+  member_id: beneficiaryId,
+  description: `Global Income (₹${amount}) from ${memberId} (Payout ${interval.payoutNum}/7)`,
+  transaction_type: "Global Income",
+  ew_credit: ewCredit,
+  ew_debit: 0,
+  uw_credit: uwCredit,
+  uw_debit: 0,
+  status: "Completed",
+  net_amount: totalPayoutAmount,
+  gross_amount: totalPayoutAmount
+});
 
-          console.log(`[GlobalIncome] Paid $${totalPayoutAmount} to ${beneficiaryId} for $${amount} package (Payout ${interval.payoutNum}/7)`);
+await transaction.save();
+
+console.log(`[GlobalIncome] Paid ₹${totalPayoutAmount} to ${beneficiaryId} for ₹${amount} package (Payout ${interval.payoutNum}/7)`);
         }
       }
     }
   } catch (error) {
-    console.error(`[GlobalIncome Error] Failed to distribute global income for ${memberId}:`, error);
-  }
+  console.error(`[GlobalIncome Error] Failed to distribute global income for ${memberId}:`, error);
+}
 };
 
 module.exports = { distributeGlobalIncome };

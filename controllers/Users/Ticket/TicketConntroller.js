@@ -5,14 +5,14 @@ const createTicket = async (req, res) => {
         const userId = req.user.id;
         const memberId = req.user.memberId;
         const ticket = new Ticket({
-        ...req.body,
-        userId,
-        reference_id: memberId
+            ...req.body,
+            userId,
+            reference_id: memberId
         });
         await ticket.save();
-        res.status(201).json({success : true , message : "Ticket Created Successfully", ticket });
+        res.status(201).json({ success: true, message: "Ticket Created Successfully", ticket });
     } catch (error) {
-        res.status(500).json({success : false , message: error.message });
+        res.status(500).json({ success: false, message: error.message });
     }
 }
 
@@ -20,7 +20,7 @@ const getTickets = async (req, res) => {
     try {
         const id = req.params.id;
         const userId = req.user.id;
-        const userRole = req.user.role; 
+        const userRole = req.user.role;
 
         if (!userId) {
             return res.status(400).json({ success: false, message: "Invalid User" });
@@ -68,9 +68,9 @@ const editTicket = async (req, res) => {
         }
 
         const updatedTicket = await Ticket.findByIdAndUpdate(
-            id, 
+            id,
             { $set: updateFields },
-            { new: true } 
+            { new: true }
         );
 
         res.status(200).json({ success: true, message: "Ticket Updated Successfully", ticket: updatedTicket });

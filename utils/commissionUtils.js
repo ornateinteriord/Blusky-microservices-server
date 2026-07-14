@@ -36,23 +36,23 @@ const getIntroducerHierarchy = async (userId, userType) => {
         if (userType === "MEMBER") {
             user = await MemberModel.findOne({ 
                 $or: [
-                    { member_id: userId },
-                    { Member_id: userId }
-                ]
+    { member_id: userId },
+    { Member_id: userId }
+]
             });
         } else if (userType === "AGENT") {
-            user = await AgentModel.findOne({ agent_id: userId });
-        }
+    user = await AgentModel.findOne({ agent_id: userId });
+}
 
-        if (!user) {
-            return [];
-        }
+if (!user) {
+    return [];
+}
 
-        return user.introducer_hierarchy || [];
+return user.introducer_hierarchy || [];
     } catch (error) {
-        console.error("Error getting introducer hierarchy:", error);
-        return [];
-    }
+    console.error("Error getting introducer hierarchy:", error);
+    return [];
+}
 };
 
 // Build introducer hierarchy when creating new member/agent
@@ -66,38 +66,38 @@ const buildIntroducerHierarchy = async (introducerId, introducerType) => {
         if (introducerType === "MEMBER") {
             introducer = await MemberModel.findOne({ 
                 $or: [
-                    { member_id: introducerId },
-                    { Member_id: introducerId }
-                ]
+    { member_id: introducerId },
+    { Member_id: introducerId }
+]
             });
         } else if (introducerType === "AGENT") {
-            introducer = await AgentModel.findOne({ agent_id: introducerId });
-        }
+    introducer = await AgentModel.findOne({ agent_id: introducerId });
+}
 
-        if (!introducer) {
-            return [introducerId]; // Just the direct introducer
-        }
+if (!introducer) {
+    return [introducerId]; // Just the direct introducer
+}
 
-        // Start with the direct introducer
-        const hierarchy = [introducerId];
+// Start with the direct introducer
+const hierarchy = [introducerId];
 
-        // Add the introducer's hierarchy (up to 6 more levels for total of 7)
-        if (introducer.introducer_hierarchy && introducer.introducer_hierarchy.length > 0) {
-            // Filter out any duplicates - don't include introducerId again if it's already in their hierarchy
-            const existingHierarchy = introducer.introducer_hierarchy
-                .filter(id => id !== introducerId && id !== String(introducerId)) // Remove duplicates
-                .slice(0, 6);
-            hierarchy.push(...existingHierarchy);
-        }
+// Add the introducer's hierarchy (up to 6 more levels for total of 7)
+if (introducer.introducer_hierarchy && introducer.introducer_hierarchy.length > 0) {
+    // Filter out any duplicates - don't include introducerId again if it's already in their hierarchy
+    const existingHierarchy = introducer.introducer_hierarchy
+        .filter(id => id !== introducerId && id !== String(introducerId)) // Remove duplicates
+        .slice(0, 6);
+    hierarchy.push(...existingHierarchy);
+}
 
-        // Ensure no duplicates in final hierarchy (just in case)
-        const uniqueHierarchy = [...new Set(hierarchy.map(String))];
+// Ensure no duplicates in final hierarchy (just in case)
+const uniqueHierarchy = [...new Set(hierarchy.map(String))];
 
-        return uniqueHierarchy.slice(0, 7); // Max 7 levels
+return uniqueHierarchy.slice(0, 7); // Max 7 levels
     } catch (error) {
-        console.error("Error building introducer hierarchy:", error);
-        return introducerId ? [introducerId] : [];
-    }
+    console.error("Error building introducer hierarchy:", error);
+    return introducerId ? [introducerId] : [];
+}
 };
 
 // Validate if transaction is eligible for commission
@@ -114,13 +114,13 @@ const validateCommissionEligibility = (transaction, config) => {
     console.log(`   Transaction Type: ${transaction.transaction_type}`);
     if (transaction.transaction_type !== "Account Opening") {
         console.log("   Result: ❌ Not Eligible - Not an 'Account Opening' transaction");
-        return { 
-            eligible: false, 
-            reason: "Only 'Account Opening' transactions are eligible for commission" 
+        return {
+            eligible: false,
+            reason: "Only 'Account Opening' transactions are eligible for commission"
         };
     }
 
-    console.log(`   Transaction Amount: $${transaction.credit}`);
+    console.log(`   Transaction Amount: ₹${transaction.credit}`);
 
     // Check if account type is commission-eligible (e.g. Pigmy/AGP005)
     const accountTypeId = transaction.account_type?.toString();
@@ -195,179 +195,179 @@ const calculateCommissions = async (transaction) => {
         // Try to find as member first (search both case variants)
         sourceUser = await MemberModel.findOne({ 
             $or: [
-                { member_id: memberId },
-                { Member_id: memberId }
-            ]
+    { member_id: memberId },
+    { Member_id: memberId }
+]
         });
-        
-        if (!sourceUser) {
-            // Try as agent
-            sourceUser = await AgentModel.findOne({ agent_id: memberId });
-            sourceType = "AGENT";
+
+if (!sourceUser) {
+    // Try as agent
+    sourceUser = await AgentModel.findOne({ agent_id: memberId });
+    sourceType = "AGENT";
+}
+
+if (!sourceUser) {
+    console.log(`Source user not found: ${memberId}`);
+    return [];
+}
+
+// Check if source is commission eligible
+if (!sourceUser.commission_eligible) {
+    console.log(`Source user ${memberId} not eligible for commission`);
+    return [];
+}
+
+// Check if source member is a senior citizen
+const ageThreshold = config.seniorCitizenAgeThreshold || 60;
+// Try various field names for DOB and Name
+const dobField = sourceUser.dob || sourceUser.date_of_birth || sourceUser.Date_of_birth;
+const sourceName = sourceUser.name || sourceUser.Name || `Member-${memberId}`;
+
+const isSenior = isSeniorCitizen(dobField, ageThreshold);
+const citizenType = isSenior ? "seniorCitizen" : "general";
+
+console.log(`\n👤 Source Member Info:`);
+console.log(`   Name: ${sourceName}`);
+console.log(`   DOB: ${dobField}`);
+console.log(`   Age Threshold: ${ageThreshold}`);
+console.log(`   Status: ${isSenior ? '🧓 Senior Citizen' : '👥 General'}`);
+
+// Get introducer hierarchy
+let hierarchy = sourceUser.introducer_hierarchy || [];
+
+// If hierarchy is empty, try to build it on the fly using sponsor fields
+if (hierarchy.length === 0) {
+    const sponsorId = sourceUser.introducer || sourceUser.sponsor_id || sourceUser.Sponsor_code;
+    if (sponsorId) {
+        console.log(`Building on-the-fly hierarchy for ${memberId} using sponsor: ${sponsorId}`);
+        // Try to find if sponsor is an agent or member
+        let sponsorType = "MEMBER";
+        let sponsor = await MemberModel.findOne({ $or: [{ member_id: sponsorId }, { Member_id: sponsorId }] });
+        if (!sponsor) {
+            sponsor = await AgentModel.findOne({ agent_id: sponsorId });
+            sponsorType = "AGENT";
         }
 
-        if (!sourceUser) {
-            console.log(`Source user not found: ${memberId}`);
-            return [];
+        if (sponsor) {
+            const { buildIntroducerHierarchy } = require("./commissionUtils");
+            hierarchy = await buildIntroducerHierarchy(sponsorId, sponsorType);
+            console.log(`Generated hierarchy: ${hierarchy.join(' -> ')}`);
         }
-
-        // Check if source is commission eligible
-        if (!sourceUser.commission_eligible) {
-            console.log(`Source user ${memberId} not eligible for commission`);
-            return [];
-        }
-
-        // Check if source member is a senior citizen
-        const ageThreshold = config.seniorCitizenAgeThreshold || 60;
-        // Try various field names for DOB and Name
-        const dobField = sourceUser.dob || sourceUser.date_of_birth || sourceUser.Date_of_birth;
-        const sourceName = sourceUser.name || sourceUser.Name || `Member-${memberId}`;
-        
-        const isSenior = isSeniorCitizen(dobField, ageThreshold);
-        const citizenType = isSenior ? "seniorCitizen" : "general";
-
-        console.log(`\n👤 Source Member Info:`);
-        console.log(`   Name: ${sourceName}`);
-        console.log(`   DOB: ${dobField}`);
-        console.log(`   Age Threshold: ${ageThreshold}`);
-        console.log(`   Status: ${isSenior ? '🧓 Senior Citizen' : '👥 General'}`);
-
-        // Get introducer hierarchy
-        let hierarchy = sourceUser.introducer_hierarchy || [];
-        
-        // If hierarchy is empty, try to build it on the fly using sponsor fields
-        if (hierarchy.length === 0) {
-            const sponsorId = sourceUser.introducer || sourceUser.sponsor_id || sourceUser.Sponsor_code;
-            if (sponsorId) {
-                console.log(`Building on-the-fly hierarchy for ${memberId} using sponsor: ${sponsorId}`);
-                // Try to find if sponsor is an agent or member
-                let sponsorType = "MEMBER";
-                let sponsor = await MemberModel.findOne({ $or: [{ member_id: sponsorId }, { Member_id: sponsorId }] });
-                if (!sponsor) {
-                    sponsor = await AgentModel.findOne({ agent_id: sponsorId });
-                    sponsorType = "AGENT";
-                }
-                
-                if (sponsor) {
-                    const { buildIntroducerHierarchy } = require("./commissionUtils");
-                    hierarchy = await buildIntroducerHierarchy(sponsorId, sponsorType);
-                    console.log(`Generated hierarchy: ${hierarchy.join(' -> ')}`);
-                }
-            }
-        }
-
-        if (hierarchy.length === 0) {
-            console.log(`No introducer or sponsor hierarchy for ${memberId}`);
-            return [];
-        }
-
-        const accountTypeName = getAccountTypeName(transaction.account_type, config);
-        const transactionAmount = transaction.credit || 0;
-        const commissions = [];
-
-        // Calculate commission for each level
-        // Track which beneficiaries have already received commission to avoid duplicates
-        const processedBeneficiaries = new Set();
-
-        for (let i = 0; i < Math.min(hierarchy.length, 7); i++) {
-            const level = i + 1;
-            const beneficiaryId = hierarchy[i];
-
-            // Skip if this beneficiary has already received commission at a higher level
-            if (processedBeneficiaries.has(beneficiaryId)) {
-                console.log(`Skipping duplicate beneficiary at level ${level}: ${beneficiaryId} (already processed at higher level)`);
-                continue;
-            }
-
-            // Find the beneficiary
-            let beneficiary = await MemberModel.findOne({ 
-                $or: [
-                    { member_id: beneficiaryId },
-                    { Member_id: beneficiaryId }
-                ]
-            });
-            let beneficiaryType = "MEMBER";
-
-            if (!beneficiary) {
-                beneficiary = await AgentModel.findOne({ agent_id: beneficiaryId });
-                beneficiaryType = "AGENT";
-            }
-
-            if (!beneficiary) {
-                console.log(`Beneficiary not found at level ${level}: ${beneficiaryId}`);
-                continue;
-            }
-
-            // Check if beneficiary is commission eligible
-            if (!beneficiary.commission_eligible) {
-                console.log(`Beneficiary ${beneficiaryId} not eligible for commission`);
-                continue;
-            }
-
-            // Get commission rate for this level and account type
-            // Use new commissionLevels structure (same rate for everyone - no senior citizen differentiation)
-            const commissionLevels = config.commissionLevels?.levels || config.levels || [];
-            const levelConfig = commissionLevels.find((l) => l.level === level);
-            if (!levelConfig) {
-                console.log(`No config found for level ${level}`);
-                continue;
-            }
-
-            // Get rate directly (new simplified structure) or from old rates structure
-            let commissionRate;
-            if (levelConfig[accountTypeName] !== undefined) {
-                // New simplified structure: { level: 1, FD: 4.50, RD: 4.50, ... }
-                commissionRate = levelConfig[accountTypeName];
-            } else if (levelConfig.rates) {
-                // Old structure with rates object
-                const rateConfig = levelConfig.rates[accountTypeName];
-                if (typeof rateConfig === 'object' && rateConfig !== null) {
-                    commissionRate = rateConfig[citizenType];
-                } else {
-                    commissionRate = rateConfig;
-                }
-            }
-
-            if (commissionRate === undefined || commissionRate === null) {
-                console.log(`No rate found for ${accountTypeName} at level ${level}`);
-                continue;
-            }
-
-            // Calculate commission amount
-            const commissionAmount = (transactionAmount * commissionRate) / 100;
-
-            // Mark this beneficiary as processed
-            processedBeneficiaries.add(beneficiaryId);
-
-            // Get beneficiary name with fallback for empty/null names
-            const beneficiaryName = (beneficiary.name || beneficiary.Name || "").trim() || `Member-${beneficiaryId}`;
-            const finalSourceName = (sourceUser.name || sourceUser.Name || "").trim() || `Member-${memberId}`;
-
-            commissions.push({
-                level,
-                beneficiary_id: beneficiaryId,
-                beneficiary_name: beneficiaryName,
-                beneficiary_type: beneficiaryType,
-                source_id: memberId,
-                source_name: finalSourceName,
-                source_type: sourceType,
-                source_citizen_type: citizenType,
-                is_senior_citizen: isSenior,
-                transaction_id: transaction.transaction_id,
-                transaction_date: transaction.transaction_date || new Date(),
-                account_type: accountTypeName,
-                account_type_id: transaction.account_type?.toString(),
-                transaction_amount: transactionAmount,
-                commission_rate: commissionRate,
-                commission_amount: commissionAmount,
-            });
-        }
-
-        return commissions;
-    } catch (error) {
-        console.error("Error calculating commissions:", error);
-        return [];
     }
+}
+
+if (hierarchy.length === 0) {
+    console.log(`No introducer or sponsor hierarchy for ${memberId}`);
+    return [];
+}
+
+const accountTypeName = getAccountTypeName(transaction.account_type, config);
+const transactionAmount = transaction.credit || 0;
+const commissions = [];
+
+// Calculate commission for each level
+// Track which beneficiaries have already received commission to avoid duplicates
+const processedBeneficiaries = new Set();
+
+for (let i = 0; i < Math.min(hierarchy.length, 7); i++) {
+    const level = i + 1;
+    const beneficiaryId = hierarchy[i];
+
+    // Skip if this beneficiary has already received commission at a higher level
+    if (processedBeneficiaries.has(beneficiaryId)) {
+        console.log(`Skipping duplicate beneficiary at level ${level}: ${beneficiaryId} (already processed at higher level)`);
+        continue;
+    }
+
+    // Find the beneficiary
+    let beneficiary = await MemberModel.findOne({ 
+                $or: [
+        { member_id: beneficiaryId },
+        { Member_id: beneficiaryId }
+    ]
+});
+let beneficiaryType = "MEMBER";
+
+if (!beneficiary) {
+    beneficiary = await AgentModel.findOne({ agent_id: beneficiaryId });
+    beneficiaryType = "AGENT";
+}
+
+if (!beneficiary) {
+    console.log(`Beneficiary not found at level ${level}: ${beneficiaryId}`);
+    continue;
+}
+
+// Check if beneficiary is commission eligible
+if (!beneficiary.commission_eligible) {
+    console.log(`Beneficiary ${beneficiaryId} not eligible for commission`);
+    continue;
+}
+
+// Get commission rate for this level and account type
+// Use new commissionLevels structure (same rate for everyone - no senior citizen differentiation)
+const commissionLevels = config.commissionLevels?.levels || config.levels || [];
+const levelConfig = commissionLevels.find((l) => l.level === level);
+if (!levelConfig) {
+    console.log(`No config found for level ${level}`);
+    continue;
+}
+
+// Get rate directly (new simplified structure) or from old rates structure
+let commissionRate;
+if (levelConfig[accountTypeName] !== undefined) {
+    // New simplified structure: { level: 1, FD: 4.50, RD: 4.50, ... }
+    commissionRate = levelConfig[accountTypeName];
+} else if (levelConfig.rates) {
+    // Old structure with rates object
+    const rateConfig = levelConfig.rates[accountTypeName];
+    if (typeof rateConfig === 'object' && rateConfig !== null) {
+        commissionRate = rateConfig[citizenType];
+    } else {
+        commissionRate = rateConfig;
+    }
+}
+
+if (commissionRate === undefined || commissionRate === null) {
+    console.log(`No rate found for ${accountTypeName} at level ${level}`);
+    continue;
+}
+
+// Calculate commission amount
+const commissionAmount = (transactionAmount * commissionRate) / 100;
+
+// Mark this beneficiary as processed
+processedBeneficiaries.add(beneficiaryId);
+
+// Get beneficiary name with fallback for empty/null names
+const beneficiaryName = (beneficiary.name || beneficiary.Name || "").trim() || `Member-${beneficiaryId}`;
+const finalSourceName = (sourceUser.name || sourceUser.Name || "").trim() || `Member-${memberId}`;
+
+commissions.push({
+    level,
+    beneficiary_id: beneficiaryId,
+    beneficiary_name: beneficiaryName,
+    beneficiary_type: beneficiaryType,
+    source_id: memberId,
+    source_name: finalSourceName,
+    source_type: sourceType,
+    source_citizen_type: citizenType,
+    is_senior_citizen: isSenior,
+    transaction_id: transaction.transaction_id,
+    transaction_date: transaction.transaction_date || new Date(),
+    account_type: accountTypeName,
+    account_type_id: transaction.account_type?.toString(),
+    transaction_amount: transactionAmount,
+    commission_rate: commissionRate,
+    commission_amount: commissionAmount,
+});
+        }
+
+return commissions;
+    } catch (error) {
+    console.error("Error calculating commissions:", error);
+    return [];
+}
 };
 
 // Generate unique commission ID
@@ -403,97 +403,97 @@ const distributeCommissions = async (commissions) => {
                 // For agents, credit directly to their commission_balance field
                 const agent = await AgentModel.findOne({
                     $or: [
-                        { agent_id: commission.beneficiary_id },
-                        { agent_id: String(commission.beneficiary_id) }
-                    ]
+    { agent_id: commission.beneficiary_id },
+    { agent_id: String(commission.beneficiary_id) }
+]
                 });
 
-                if (agent) {
-                    // Update agent's commission balance using updateOne to bypass validation
-                    const newBalance = (parseFloat(agent.commission_balance) || 0) + commission.commission_amount;
-                    await AgentModel.updateOne(
-                        { _id: agent._id },
-                        { $set: { commission_balance: newBalance } }
-                    );
+if (agent) {
+    // Update agent's commission balance using updateOne to bypass validation
+    const newBalance = (parseFloat(agent.commission_balance) || 0) + commission.commission_amount;
+    await AgentModel.updateOne(
+        { _id: agent._id },
+        { $set: { commission_balance: newBalance } }
+    );
 
-                    // Update commission record as credited
-                    commissionRecord.status = "CREDITED";
-                    commissionRecord.credited_at = new Date();
-                    await commissionRecord.save();
+    // Update commission record as credited
+    commissionRecord.status = "CREDITED";
+    commissionRecord.credited_at = new Date();
+    await commissionRecord.save();
 
-                    console.log(`✅ Commission credited to agent ${commission.beneficiary_id}: $${commission.commission_amount}`);
+    console.log(`✅ Commission credited to agent ${commission.beneficiary_id}: ₹${commission.commission_amount}`);
 
-                    results.successful.push({
-                        commission_id: commissionId,
-                        beneficiary_id: commission.beneficiary_id,
-                        amount: commission.commission_amount,
-                    });
-                } else {
-                    // Agent not found - mark as failed
-                    commissionRecord.status = "FAILED";
-                    commissionRecord.failure_reason = "Agent not found";
-                    await commissionRecord.save();
+    results.successful.push({
+        commission_id: commissionId,
+        beneficiary_id: commission.beneficiary_id,
+        amount: commission.commission_amount,
+    });
+} else {
+    // Agent not found - mark as failed
+    commissionRecord.status = "FAILED";
+    commissionRecord.failure_reason = "Agent not found";
+    await commissionRecord.save();
 
-                    results.failed.push({
-                        commission_id: commissionId,
-                        beneficiary_id: commission.beneficiary_id,
-                        reason: "Agent not found",
-                    });
-                }
+    results.failed.push({
+        commission_id: commissionId,
+        beneficiary_id: commission.beneficiary_id,
+        reason: "Agent not found",
+    });
+}
             } else {
-                // For members, credit to their commission_balance and optionally to account
-                const member = await MemberModel.findOne({
+    // For members, credit to their commission_balance and optionally to account
+    const member = await MemberModel.findOne({
                     $or: [
-                        { member_id: commission.beneficiary_id },
-                        { Member_id: commission.beneficiary_id }
-                    ]
-                });
+        { member_id: commission.beneficiary_id },
+        { Member_id: commission.beneficiary_id }
+    ]
+});
 
-                if (member) {
-                    // Update member's commission balance only
-                    // NOTE: Commission is NOT added to account balance - it goes to commission_balance only
-                    // Use updateOne to bypass validation (some members may have empty required fields like 'introducer')
-                    const newBalance = (parseFloat(member.commission_balance) || 0) + commission.commission_amount;
-                    await MemberModel.updateOne(
-                        { _id: member._id },
-                        { $set: { commission_balance: newBalance } }
-                    );
+if (member) {
+    // Update member's commission balance only
+    // NOTE: Commission is NOT added to account balance - it goes to commission_balance only
+    // Use updateOne to bypass validation (some members may have empty required fields like 'introducer')
+    const newBalance = (parseFloat(member.commission_balance) || 0) + commission.commission_amount;
+    await MemberModel.updateOne(
+        { _id: member._id },
+        { $set: { commission_balance: newBalance } }
+    );
 
-                    // Update commission record as credited
-                    commissionRecord.status = "CREDITED";
-                    commissionRecord.credited_at = new Date();
-                    await commissionRecord.save();
+    // Update commission record as credited
+    commissionRecord.status = "CREDITED";
+    commissionRecord.credited_at = new Date();
+    await commissionRecord.save();
 
-                    console.log(`✅ Commission credited to member ${commission.beneficiary_id}: $${commission.commission_amount}`);
+    console.log(`✅ Commission credited to member ${commission.beneficiary_id}: ₹${commission.commission_amount}`);
 
-                    results.successful.push({
-                        commission_id: commissionId,
-                        beneficiary_id: commission.beneficiary_id,
-                        amount: commission.commission_amount,
-                    });
-                } else {
-                    // Member not found - mark as failed
-                    commissionRecord.status = "FAILED";
-                    commissionRecord.failure_reason = "Member not found";
-                    await commissionRecord.save();
+    results.successful.push({
+        commission_id: commissionId,
+        beneficiary_id: commission.beneficiary_id,
+        amount: commission.commission_amount,
+    });
+} else {
+    // Member not found - mark as failed
+    commissionRecord.status = "FAILED";
+    commissionRecord.failure_reason = "Member not found";
+    await commissionRecord.save();
 
-                    results.failed.push({
-                        commission_id: commissionId,
-                        beneficiary_id: commission.beneficiary_id,
-                        reason: "Member not found",
-                    });
-                }
+    results.failed.push({
+        commission_id: commissionId,
+        beneficiary_id: commission.beneficiary_id,
+        reason: "Member not found",
+    });
+}
             }
         } catch (error) {
-            console.error("Error distributing commission:", error);
-            results.failed.push({
-                beneficiary_id: commission.beneficiary_id,
-                reason: error.message,
-            });
-        }
+    console.error("Error distributing commission:", error);
+    results.failed.push({
+        beneficiary_id: commission.beneficiary_id,
+        reason: error.message,
+    });
+}
     }
 
-    return results;
+return results;
 };
 
 // Process commission for a completed transaction
@@ -504,7 +504,7 @@ const processTransactionCommission = async (transaction) => {
         console.log("=".repeat(60));
         console.log(`📄 Transaction ID: ${transaction.transaction_id}`);
         console.log(`👤 Member ID: ${transaction.member_id}`);
-        console.log(`💰 Amount: $${transaction.credit}`);
+        console.log(`💰 Amount: ₹${transaction.credit}`);
         console.log(`🏦 Account Type: ${transaction.account_type}`);
         console.log("-".repeat(60));
 
@@ -515,7 +515,7 @@ const processTransactionCommission = async (transaction) => {
             console.log("❌ No commissions to distribute");
             console.log("   Possible reasons:");
             console.log("   - Member has no introducer");
-            console.log("   - Amount below minimum ($100)");
+            console.log("   - Amount below minimum (₹100)");
             console.log("   - Commission system disabled");
             console.log("   - Account type not eligible");
             console.log("=".repeat(60) + "\n");
@@ -532,7 +532,7 @@ const processTransactionCommission = async (transaction) => {
             console.log(`   └─ Level: ${comm.level}`);
             console.log(`   └─ Beneficiary: ${comm.beneficiary_name} (${comm.beneficiary_id})`);
             console.log(`   └─ Rate: ${comm.commission_rate}%`);
-            console.log(`   └─ Amount: $${comm.commission_amount.toFixed(2)}`);
+            console.log(`   └─ Amount: ₹${comm.commission_amount.toFixed(2)}`);
         });
         console.log("-".repeat(60));
 
@@ -547,7 +547,7 @@ const processTransactionCommission = async (transaction) => {
         if (results.successful.length > 0) {
             console.log("\n   Credited:");
             results.successful.forEach(s => {
-                console.log(`   ✓ ${s.beneficiary_id}: $${s.amount.toFixed(2)}`);
+                console.log(`   ✓ ${s.beneficiary_id}: ₹${s.amount.toFixed(2)}`);
             });
         }
 

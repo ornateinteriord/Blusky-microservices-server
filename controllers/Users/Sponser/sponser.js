@@ -11,42 +11,42 @@ const getSponsers = async (req, res) => {
       $or: [{ Member_id: memberId }, { member_id: memberId }]
     });
 
-    if (!parentUser) {
-      return res.status(404).json({ success: false, message: "Parent user not found" });
-    }
+if (!parentUser) {
+  return res.status(404).json({ success: false, message: "Parent user not found" });
+}
 
-    const sponsoredUsers = await MemberModel.aggregate([
-      { 
+const sponsoredUsers = await MemberModel.aggregate([
+  { 
         $match: { 
           $or: [
-            { Sponsor_code: memberId },
-            { sponsor_id: memberId },
-            { introducer: memberId }
-          ]
-        } 
+    { Sponsor_code: memberId },
+    { sponsor_id: memberId },
+    { introducer: memberId }
+  ]
+} 
       },
-      {
+{
         $project: {
-          _id: 0,
-          Member_id: { $ifNull: ["$Member_id", "$member_id"] },
-          Name: { $ifNull: ["$Name", "$name"] },
-          status: 1,
-          Date_of_joining: 1,
-          profile_image: { $ifNull: ["$profile_image", "$member_image"] },
-          mobileno: { $ifNull: ["$mobileno", "$contactno"] },
-          Sponsor_code: { $ifNull: ["$Sponsor_code", "$sponsor_id", "$introducer"] },
-          Sponsor_name: { $ifNull: ["$Sponsor_name", "$introducer_name"] },
-          wallet_balance: 1,
-          total_team: 1,
-          direct_referrals: 1
-        }
-      }
+    _id: 0,
+      Member_id: { $ifNull: ["$Member_id", "$member_id"] },
+    Name: { $ifNull: ["$Name", "$name"] },
+    status: 1,
+      Date_of_joining: 1,
+        profile_image: { $ifNull: ["$profile_image", "$member_image"] },
+    mobileno: { $ifNull: ["$mobileno", "$contactno"] },
+    Sponsor_code: { $ifNull: ["$Sponsor_code", "$sponsor_id", "$introducer"] },
+    Sponsor_name: { $ifNull: ["$Sponsor_name", "$introducer_name"] },
+    wallet_balance: 1,
+      total_team: 1,
+        direct_referrals: 1
+  }
+}
     ]);
 
-    res.json({ success: true, parentUser, sponsoredUsers });
+res.json({ success: true, parentUser, sponsoredUsers });
   } catch (error) {
-    res.status(500).json({ error: 'Server error' });
-  }
+  res.status(500).json({ error: 'Server error' });
+}
 };
 
 
@@ -78,7 +78,7 @@ const checkSponsorReward = async (req, res) => {
 
     let message = "";
     if (!hasRequiredPackage) {
-      message = `❌ ${member.Name} does not have the required package (standerd - $2600).`;
+      message = `❌ ${member.Name} does not have the required package (standerd - ₹2600).`;
     } else if (sponsoredCount < 2) {
       message = `⚠️ ${member.Name} has the correct package but needs ${2 - sponsoredCount} more sponsored member(s) to qualify.`;
     } else {

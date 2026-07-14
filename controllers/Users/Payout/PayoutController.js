@@ -312,97 +312,97 @@ const climeRewardLoan = async (req, res) => {
       member_id: memberId,
       transaction_type: "Reward Loan Request",
       $or: [
-        { status: "Processing" },
-        { status: "Pending" },
-        { status: "Approved", repayment_status: { $ne: "Paid" } }
-      ]
+  { status: "Processing" },
+  { status: "Pending" },
+  { status: "Approved", repayment_status: { $ne: "Paid" } }
+]
     });
 
-    if (activeLoan) {
-      return res.status(400).json({
-        success: false,
-        message: "You already have an active or pending loan. Please clear it first.",
-      });
-    }
+if (activeLoan) {
+  return res.status(400).json({
+    success: false,
+    message: "You already have an active or pending loan. Please clear it first.",
+  });
+}
 
-    // ELIGIBILITY CHECK: Package Value must be >= 600 (Covers 600 and 1200 packages)
-    if (!member.package_value || member.package_value < 600) {
-      return res.status(400).json({
-        success: false,
-        message: "You need a package value of at least 600 to be eligible for a loan.",
-      });
-    }
+// ELIGIBILITY CHECK: Package Value must be >= 600 (Covers 600 and 1200 packages)
+if (!member.package_value || member.package_value < 600) {
+  return res.status(400).json({
+    success: false,
+    message: "You need a package value of at least 600 to be eligible for a loan.",
+  });
+}
 
-    // ELIGIBILITY CHECK: Must have at least 2 Direct Referrals
-    if (!member.direct_referrals || member.direct_referrals.length < 2) {
-      return res.status(400).json({
-        success: false,
-        message: "You need at least 2 direct referrals to be eligible for a loan.",
-      });
-    }
+// ELIGIBILITY CHECK: Must have at least 2 Direct Referrals
+if (!member.direct_referrals || member.direct_referrals.length < 2) {
+  return res.status(400).json({
+    success: false,
+    message: "You need at least 2 direct referrals to be eligible for a loan.",
+  });
+}
 
-    // Determine Loan Level
-    const completedLoansCount = await TransactionModel.countDocuments({
-      member_id: memberId,
-      transaction_type: "Reward Loan Request",
-      status: "Approved",
-      repayment_status: "Paid"
-    });
+// Determine Loan Level
+const completedLoansCount = await TransactionModel.countDocuments({
+  member_id: memberId,
+  transaction_type: "Reward Loan Request",
+  status: "Approved",
+  repayment_status: "Paid"
+});
 
-    const currentLevelIndex = completedLoansCount;
+const currentLevelIndex = completedLoansCount;
 
-    if (currentLevelIndex >= LOAN_TIERS.length) {
-      return res.status(400).json({
-        success: false,
-        message: "Maximum loan limit reached. You have completed all loan levels.",
-      });
-    }
+if (currentLevelIndex >= LOAN_TIERS.length) {
+  return res.status(400).json({
+    success: false,
+    message: "Maximum loan limit reached. You have completed all loan levels.",
+  });
+}
 
-    const loanDetails = LOAN_TIERS[currentLevelIndex];
-    const loanAmount = loanDetails.amount;
-    console.log("loanDetails", loanDetails);
-    console.log("loanDetails", loanAmount);
+const loanDetails = LOAN_TIERS[currentLevelIndex];
+const loanAmount = loanDetails.amount;
+console.log("loanDetails", loanDetails);
+console.log("loanDetails", loanAmount);
 
-    member.upgrade_status = "Processing";
-    await member.save();
+member.upgrade_status = "Processing";
+await member.save();
 
-    const tx = new TransactionModel({
-      transaction_id: `RL-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      transaction_date: new Date().toISOString(),
-      member_id: member.Member_id,
-      Name: member.Name,
-      mobileno: member.mobileno,
-      description: `Reward loan request (Level ${loanDetails.level}) of $${loanAmount}${note ? ` - ${note}` : ""
+const tx = new TransactionModel({
+  transaction_id: `RL-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+  transaction_date: new Date().toISOString(),
+  member_id: member.Member_id,
+  Name: member.Name,
+  mobileno: member.mobileno,
+  description: `Reward loan request (Level ${loanDetails.level}) of ₹${loanAmount}${note ? ` - ${ note }` : ""
         }`,
-      transaction_type: "Reward Loan Request",
-      ew_credit: loanAmount,
-      ew_debit: "0",
-      status: "Processing",
-      benefit_type: "loan",
-      previous_balance: "",
-      reference_no: `RLREF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+  transaction_type: "Reward Loan Request",
+  ew_credit: loanAmount,
+  ew_debit: "0",
+  status: "Processing",
+  benefit_type: "loan",
+  previous_balance: "",
+  reference_no: `RLREF-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
     });
 
-    await tx.save();
+await tx.save();
 
-    return res.status(200).json({
-      success: true,
-      message:
-        `Reward loan (Level ${loanDetails.level}) claimed successfully. Status set to Processing. Admin will process the request.`,
-      data: {
-        member_id: member.Member_id,
-        status: member.upgrade_status,
-        requested_amount: loanAmount,
-        level: loanDetails.level,
-        transaction_ref: tx.reference_no,
-      },
-    });
+return res.status(200).json({
+  success: true,
+  message:
+    `Reward loan (Level ${loanDetails.level}) claimed successfully. Status set to Processing. Admin will process the request.`,
+  data: {
+    member_id: member.Member_id,
+    status: member.upgrade_status,
+    requested_amount: loanAmount,
+    level: loanDetails.level,
+    transaction_ref: tx.reference_no,
+  },
+});
   } catch (error) {
-    console.error("Error in climeRewardLoan:", error);
-    return res
-      .status(500)
-      .json({ success: false, message: "Server error", error: error.message });
-  }
+  console.error("Error in climeRewardLoan:", error);
+  return res
+    .status(500)
+    .json({ success: false, message: "Server error", error: error.message });
+}
 };
 
 const getRewardLoansByStatus = async (req, res) => {
@@ -640,7 +640,7 @@ const repaymentLoan = async (req, res) => {
       member_id: memberId,
       Name: member?.Name || loanTransaction.Name,
       mobileno: member?.mobileno || loanTransaction.mobileno,
-      description: `Loan Repayment of $${actualPayment}. Remaining Due: $${newDueAmount.toFixed(2)}`,
+      description: `Loan Repayment of ₹${actualPayment}. Remaining Due: ₹${newDueAmount.toFixed(2)}`,
       transaction_type: "Loan Repayment",
       ew_credit: currentDueAmount,
       ew_debit: actualPayment.toFixed(2),
@@ -667,7 +667,7 @@ const repaymentLoan = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `Loan repayment of $${actualPayment} processed successfully.`,
+      message: `Loan repayment of ₹${actualPayment} processed successfully.`,
       data: {
         member_id: memberId,
         payment_amount: actualPayment,
@@ -717,53 +717,53 @@ const getROIBenefits = async (req, res) => {
       { 
         $match: {
           ...query,
-          transaction_type: "ROI Level Benefit",
+    transaction_type: "ROI Level Benefit",
         }
       },
-      {
+{
         $lookup: {
-          from: "member_tbl",
-          localField: "related_member_id",
-          foreignField: "Member_id",
+    from: "member_tbl",
+      localField: "related_member_id",
+        foreignField: "Member_id",
           as: "related_member"
-        }
-      },
-      {
+  }
+},
+{
         $addFields: {
-          related_member_name: {
+    related_member_name: {
             $ifNull: [
-              "$related_member_name",
-              { $arrayElemAt: ["$related_member.Name", 0] }
-            ]
-          }
-        }
-      },
-      {
+        "$related_member_name",
+        { $arrayElemAt: ["$related_member.Name", 0] }
+      ]
+    }
+  }
+},
+{
         $project: {
-          related_member: 0
-        }
-      },
-      { $sort: { transaction_date: -1, createdAt: -1 } }
+    related_member: 0
+  }
+},
+{ $sort: { transaction_date: -1, createdAt: -1 } }
     ]);
 
-    return res.status(200).json({
-      success: true,
-      data: { roi_benefits: transactions },
-    });
+return res.status(200).json({
+  success: true,
+  data: { roi_benefits: transactions },
+});
   } catch (error) {
-    console.error("Error in getROIBenefits:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    });
-  }
+  console.error("Error in getROIBenefits:", error);
+  return res.status(500).json({
+    success: false,
+    message: "Server error",
+    error: error.message,
+  });
+}
 };
 
 const getROISummary = async (req, res) => {
   try {
     const todayStr = new Date().toISOString().split('T')[0];
-    
+
     // 1. Total ROI Distributed
     const totalROIResult = await TransactionModel.aggregate([
       { $match: { transaction_type: "ROI Payout", status: "Completed" } },
@@ -774,43 +774,43 @@ const getROISummary = async (req, res) => {
     // 2. Today's Payouts
     const todaysPayoutsResult = await TransactionModel.aggregate([
       { 
-        $match: { 
-          transaction_type: "ROI Payout", 
-          status: "Completed",
-          transaction_date: todayStr
-        } 
+        $match: {
+  transaction_type: "ROI Payout",
+    status: "Completed",
+      transaction_date: todayStr
+} 
       },
-      { $group: { _id: null, total: { $sum: { $toDouble: "$ew_credit" } }, count: { $sum: 1 } } }
+{ $group: { _id: null, total: { $sum: { $toDouble: "$ew_credit" } }, count: { $sum: 1 } } }
     ]);
-    const todaysTotal = todaysPayoutsResult[0]?.total || 0;
-    const todaysCount = todaysPayoutsResult[0]?.count || 0;
+const todaysTotal = todaysPayoutsResult[0]?.total || 0;
+const todaysCount = todaysPayoutsResult[0]?.count || 0;
 
-    // 3. Active ROI Contracts
+// 3. Active ROI Contracts
 
 
-    const activeContractsCount = await MemberModel.countDocuments({
-      status: "active",
-      roi_status: "Active"
-    });
+const activeContractsCount = await MemberModel.countDocuments({
+  status: "active",
+  roi_status: "Active"
+});
 
-    return res.status(200).json({
-      success: true,
-      data: {
-        totalROIDistributed,
-        todaysTotal,
-        todaysCount,
-        activeContractsCount,
-        lastUpdated: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    console.error("Error in getROISummary:", error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error",
-      error: error.message,
-    });
+return res.status(200).json({
+  success: true,
+  data: {
+    totalROIDistributed,
+    todaysTotal,
+    todaysCount,
+    activeContractsCount,
+    lastUpdated: new Date().toISOString()
   }
+});
+  } catch (error) {
+  console.error("Error in getROISummary:", error);
+  return res.status(500).json({
+    success: false,
+    message: "Server error",
+    error: error.message,
+  });
+}
 };
 
 

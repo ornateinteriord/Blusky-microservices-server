@@ -59,13 +59,13 @@ const io = new Server(server, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // Postman / server-to-server
 
-      const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+      const isLocalhost = /^http:\/\/localhost:\d+₹/.test(origin);
       const isNgrok = origin?.endsWith("ngrok-free.dev");
       const socketAllowedOrigins = [
         process.env.FRONTEND_URL,
-        "https://www.usdtworld.club",
-        "https://usdtworld.club",
-        "https://usdt-worl-club.vercel.app"
+        "https://www.BMSworld.club",
+        "https://BMSworld.club",
+        "https://BMS-worl-club.vercel.app"
       ].filter(Boolean);
 
       if (isLocalhost || isNgrok || socketAllowedOrigins.includes(origin)) {
@@ -123,9 +123,9 @@ io.on("connection", (socket) => {
 // ======================================================
 const allowedOrigins = [
   process.env.FRONTEND_URL,
-  "https://usdt-worl-club.vercel.app",
-  "https://www.usdtworld.club",
-  "https://usdtworld.club",
+  "https://BMS-worl-club.vercel.app",
+  "https://www.BMSworld.club",
+  "https://BMSworld.club",
 ].filter(Boolean);
 
 app.use(
@@ -133,7 +133,7 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // Postman / server-to-server
 
-      const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+      const isLocalhost = /^http:\/\/localhost:\d+₹/.test(origin);
       const isNgrok = origin.endsWith("ngrok-free.dev");
 
       if (isLocalhost || isNgrok || allowedOrigins.includes(origin)) {
@@ -152,7 +152,7 @@ app.use(
 app.options("*", cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+    const isLocalhost = /^http:\/\/localhost:\d+₹/.test(origin);
     const isNgrok = origin.endsWith("ngrok-free.dev");
     if (isLocalhost || isNgrok || allowedOrigins.includes(origin)) {
       return callback(null, true);

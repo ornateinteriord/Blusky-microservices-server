@@ -41,7 +41,7 @@ const initCronJobs = () => {
     // Ensures missed days are processed if the server was offline.
     setTimeout(async () => {
         console.log("⏰ [CRON] Running Startup ROI Check & Auto-Upgrade (Fail-Safe Catch-up)...");
-        
+
         try {
             const result = await processDailyROI();
             if (result.processedCount > 0) {

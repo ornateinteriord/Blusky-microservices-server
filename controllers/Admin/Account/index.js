@@ -160,7 +160,7 @@ const createAccount = async (req, res) => {
         // Professional Account Number Generation
         // Format: [PREFIX][SEQUENCE]
         // Example: SB000001, RD000001, PIG000001
-        
+
         const groupName = accountGroup.account_group_name?.toUpperCase() || "";
         let typePrefix = "ACC";
         if (groupName.includes("SAVING") || groupName === "SB") typePrefix = "SB";
@@ -170,7 +170,7 @@ const createAccount = async (req, res) => {
         else if (groupName.includes("PIGMY") || groupName === "PIG") typePrefix = "PIG";
         else if (groupName.includes("MONTHLY") || groupName === "MIS") typePrefix = "MI";
         else if (groupName.includes("DAILY")) typePrefix = "PIG";
-        
+
         // Find the last account with this prefix to determine next sequence
         const lastAccountWithPrefix = await AccountsModel.findOne({
             account_no: { $regex: new RegExp(`^${typePrefix}`) }
@@ -355,30 +355,30 @@ const getAccountById = async (req, res) => {
         // Use direct findOne instead of fetching all
         const account = await AccountsModel.findOne({
             $or: [
-                { account_id: accountId },
-                { account_id: accountId.toString() }
-            ]
+    { account_id: accountId },
+    { account_id: accountId.toString() }
+]
         });
 
-        if (!account) {
-            return res.status(404).json({
-                success: false,
-                message: "Account not found"
-            });
-        }
+if (!account) {
+    return res.status(404).json({
+        success: false,
+        message: "Account not found"
+    });
+}
 
-        res.status(200).json({
-            success: true,
-            message: "Account fetched successfully",
-            data: account
-        });
+res.status(200).json({
+    success: true,
+    message: "Account fetched successfully",
+    data: account
+});
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch account",
-            error: error.message
-        });
-    }
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch account",
+        error: error.message
+    });
+}
 };
 
 // Update an account by ID
@@ -496,71 +496,71 @@ const getPreMaturityAccounts = async (req, res) => {
             $ne: null // Exclude accounts without maturity date
         };
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const accounts = await AccountsModel.find(filter)
-            .sort({ date_of_maturity: 1 }) // Sort by nearest maturity date first
-            .skip(skip)
-            .limit(parseInt(limit));
+const accounts = await AccountsModel.find(filter)
+    .sort({ date_of_maturity: 1 }) // Sort by nearest maturity date first
+    .skip(skip)
+    .limit(parseInt(limit));
 
-        const totalAccounts = await AccountsModel.countDocuments(filter);
+const totalAccounts = await AccountsModel.countDocuments(filter);
 
-        // Fetch member details for each account
-        const accountsWithMemberDetails = await Promise.all(
-            accounts.map(async (account) => {
-                const accountObj = account.toObject();
+// Fetch member details for each account
+const accountsWithMemberDetails = await Promise.all(
+    accounts.map(async (account) => {
+        const accountObj = account.toObject();
 
-                if (accountObj.member_id) {
-                    const member = await MemberModel.findOne(
-                        { member_id: accountObj.member_id },
-                        { name: 1, contactno: 1, emailid: 1, address: 1, _id: 0 }
-                    );
+        if (accountObj.member_id) {
+            const member = await MemberModel.findOne(
+                { member_id: accountObj.member_id },
+                { name: 1, contactno: 1, emailid: 1, address: 1, _id: 0 }
+            );
 
-                    if (member) {
-                        accountObj.memberDetails = {
-                            name: member.name,
-                            contactno: member.contactno,
-                            emailid: member.emailid,
-                            address: member.address
-                        };
-                    }
-                }
-
-                // Fetch account group details
-                if (accountObj.account_type) {
-                    const accountGroup = await AccountGroupModel.findOne(
-                        { account_group_id: accountObj.account_type },
-                        { account_group_name: 1, _id: 0 }
-                    );
-
-                    if (accountGroup) {
-                        accountObj.account_type_name = accountGroup.account_group_name;
-                    }
-                }
-
-                return accountObj;
-            })
-        );
-
-        res.status(200).json({
-            success: true,
-            message: "Pre-maturity accounts fetched successfully",
-            data: accountsWithMemberDetails,
-            pagination: {
-                total: totalAccounts,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                totalPages: Math.ceil(totalAccounts / parseInt(limit))
+            if (member) {
+                accountObj.memberDetails = {
+                    name: member.name,
+                    contactno: member.contactno,
+                    emailid: member.emailid,
+                    address: member.address
+                };
             }
-        });
-    } catch (error) {
-        console.error("Error fetching pre-maturity accounts:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch pre-maturity accounts",
-            error: error.message
-        });
+        }
+
+        // Fetch account group details
+        if (accountObj.account_type) {
+            const accountGroup = await AccountGroupModel.findOne(
+                { account_group_id: accountObj.account_type },
+                { account_group_name: 1, _id: 0 }
+            );
+
+            if (accountGroup) {
+                accountObj.account_type_name = accountGroup.account_group_name;
+            }
+        }
+
+        return accountObj;
+    })
+);
+
+res.status(200).json({
+    success: true,
+    message: "Pre-maturity accounts fetched successfully",
+    data: accountsWithMemberDetails,
+    pagination: {
+        total: totalAccounts,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(totalAccounts / parseInt(limit))
     }
+});
+    } catch (error) {
+    console.error("Error fetching pre-maturity accounts:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch pre-maturity accounts",
+        error: error.message
+    });
+}
 };
 
 // Get post-maturity accounts (date_of_maturity < today)
@@ -593,71 +593,71 @@ const getPostMaturityAccounts = async (req, res) => {
             $ne: null // Exclude accounts without maturity date
         };
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        const accounts = await AccountsModel.find(filter)
-            .sort({ date_of_maturity: -1 }) // Sort by most recent maturity date first
-            .skip(skip)
-            .limit(parseInt(limit));
+const accounts = await AccountsModel.find(filter)
+    .sort({ date_of_maturity: -1 }) // Sort by most recent maturity date first
+    .skip(skip)
+    .limit(parseInt(limit));
 
-        const totalAccounts = await AccountsModel.countDocuments(filter);
+const totalAccounts = await AccountsModel.countDocuments(filter);
 
-        // Fetch member details for each account
-        const accountsWithMemberDetails = await Promise.all(
-            accounts.map(async (account) => {
-                const accountObj = account.toObject();
+// Fetch member details for each account
+const accountsWithMemberDetails = await Promise.all(
+    accounts.map(async (account) => {
+        const accountObj = account.toObject();
 
-                if (accountObj.member_id) {
-                    const member = await MemberModel.findOne(
-                        { member_id: accountObj.member_id },
-                        { name: 1, contactno: 1, emailid: 1, address: 1, _id: 0 }
-                    );
+        if (accountObj.member_id) {
+            const member = await MemberModel.findOne(
+                { member_id: accountObj.member_id },
+                { name: 1, contactno: 1, emailid: 1, address: 1, _id: 0 }
+            );
 
-                    if (member) {
-                        accountObj.memberDetails = {
-                            name: member.name,
-                            contactno: member.contactno,
-                            emailid: member.emailid,
-                            address: member.address
-                        };
-                    }
-                }
-
-                // Fetch account group details
-                if (accountObj.account_type) {
-                    const accountGroup = await AccountGroupModel.findOne(
-                        { account_group_id: accountObj.account_type },
-                        { account_group_name: 1, _id: 0 }
-                    );
-
-                    if (accountGroup) {
-                        accountObj.account_type_name = accountGroup.account_group_name;
-                    }
-                }
-
-                return accountObj;
-            })
-        );
-
-        res.status(200).json({
-            success: true,
-            message: "Post-maturity accounts fetched successfully",
-            data: accountsWithMemberDetails,
-            pagination: {
-                total: totalAccounts,
-                page: parseInt(page),
-                limit: parseInt(limit),
-                totalPages: Math.ceil(totalAccounts / parseInt(limit))
+            if (member) {
+                accountObj.memberDetails = {
+                    name: member.name,
+                    contactno: member.contactno,
+                    emailid: member.emailid,
+                    address: member.address
+                };
             }
-        });
-    } catch (error) {
-        console.error("Error fetching post-maturity accounts:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch post-maturity accounts",
-            error: error.message
-        });
+        }
+
+        // Fetch account group details
+        if (accountObj.account_type) {
+            const accountGroup = await AccountGroupModel.findOne(
+                { account_group_id: accountObj.account_type },
+                { account_group_name: 1, _id: 0 }
+            );
+
+            if (accountGroup) {
+                accountObj.account_type_name = accountGroup.account_group_name;
+            }
+        }
+
+        return accountObj;
+    })
+);
+
+res.status(200).json({
+    success: true,
+    message: "Post-maturity accounts fetched successfully",
+    data: accountsWithMemberDetails,
+    pagination: {
+        total: totalAccounts,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(totalAccounts / parseInt(limit))
     }
+});
+    } catch (error) {
+    console.error("Error fetching post-maturity accounts:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch post-maturity accounts",
+        error: error.message
+    });
+}
 };
 
 // Get account transactions with optional account_type filter (for admin)

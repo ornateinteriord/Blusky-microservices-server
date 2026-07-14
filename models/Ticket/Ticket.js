@@ -7,14 +7,14 @@ const ticketSchema = new mongoose.Schema({
         ref: MemberModel,
         required: true
     },
-    ticket_id: { type: String, unique:true },
-    ticket_no: { type: String,unique:true },
+    ticket_id: { type: String, unique: true },
+    ticket_no: { type: String, unique: true },
     ticket_date: { type: Date, default: Date.now },
     type_of_ticket: { type: String, },
     ticket_details: { type: String, },
-    reference_id:{type: String,},
+    reference_id: { type: String, },
     reply_details: { type: String, default: null },
-    ticket_status: { type: String, enum :["pending", "answered"] ,default: "pending" },
+    ticket_status: { type: String, enum: ["pending", "answered"], default: "pending" },
     SUBJECT: { type: String, }
 }, { timestamps: true, collection: "ticket_tbl" });
 
@@ -23,7 +23,7 @@ const generateUniqueTicketNo = async () => {
     let ticketNo;
     let exists;
     do {
-        ticketNo = String(Math.floor(100 + Math.random() * 900)); 
+        ticketNo = String(Math.floor(100 + Math.random() * 900));
         exists = await mongoose.model('ticket_tbl').exists({ ticket_no: ticketNo });
     } while (exists);
 

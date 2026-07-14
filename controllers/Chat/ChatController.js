@@ -96,47 +96,47 @@ const searchMember = async (req, res) => {
 
         const member = await MemberModel.findOne({
             $or: [
-                { mobileno: mobileNumber },
-                { contactno: mobileNumber },
-                { mobile: mobileNumber },
-                { phone: mobileNumber },
-                { Mobile_Number: mobileNumber },
-            ],
+    { mobileno: mobileNumber },
+    { contactno: mobileNumber },
+    { mobile: mobileNumber },
+    { phone: mobileNumber },
+    { Mobile_Number: mobileNumber },
+],
         }).select("Member_id Name username mobileno contactno mobile phone profile_image role status");
 
-        if (!member) {
-            const sample = await MemberModel.findOne({ status: 'active' }).select('Member_id Name mobileno status');
-            console.log('🧪 Sample active BMS member:', JSON.stringify(sample));
-            return res.status(404).json({ success: false, message: "No member found with this mobile number" });
-        }
+if (!member) {
+    const sample = await MemberModel.findOne({ status: 'active' }).select('Member_id Name mobileno status');
+    console.log('🧪 Sample active BMS member:', JSON.stringify(sample));
+    return res.status(404).json({ success: false, message: "No member found with this mobile number" });
+}
 
-        if (member.Member_id === userId) return res.status(400).json({ success: false, message: "You cannot chat with yourself" });
-        if (member.status?.toLowerCase() !== "active") return res.status(400).json({ success: false, message: `Member is not active (status: ${member.status})` });
+if (member.Member_id === userId) return res.status(400).json({ success: false, message: "You cannot chat with yourself" });
+if (member.status?.toLowerCase() !== "active") return res.status(400).json({ success: false, message: `Member is not active (status: ${member.status})` });
 
-        const participants = [userId, member.Member_id].sort();
-        const roomId = participants.join("_");
+const participants = [userId, member.Member_id].sort();
+const roomId = participants.join("_");
 
-        let chatRoom = await ChatRoomModel.findOne({ roomId });
-        if (!chatRoom) {
-            const currentUser = await MemberModel.findOne({ Member_id: userId });
-            chatRoom = new ChatRoomModel({
-                roomId, participants,
-                participantDetails: [
-                    { memberId: userId, name: currentUser?.Name || "Me", role: req.user.role || "USER", profileImage: currentUser?.profile_image || "" },
-                    { memberId: member.Member_id, name: member.Name, role: member.role || "USER", profileImage: member.profile_image || "" },
-                ],
-                unreadCount: new Map(),
-            });
-            await chatRoom.save();
-        }
+let chatRoom = await ChatRoomModel.findOne({ roomId });
+if (!chatRoom) {
+    const currentUser = await MemberModel.findOne({ Member_id: userId });
+    chatRoom = new ChatRoomModel({
+        roomId, participants,
+        participantDetails: [
+            { memberId: userId, name: currentUser?.Name || "Me", role: req.user.role || "USER", profileImage: currentUser?.profile_image || "" },
+            { memberId: member.Member_id, name: member.Name, role: member.role || "USER", profileImage: member.profile_image || "" },
+        ],
+        unreadCount: new Map(),
+    });
+    await chatRoom.save();
+}
 
-        res.status(200).json({
-            success: true,
-            data: { member: { Member_id: member.Member_id, Name: member.Name, mobile: member.mobileno || member.contactno, profile_image: member.profile_image, role: member.role }, chatRoom },
-        });
+res.status(200).json({
+    success: true,
+    data: { member: { Member_id: member.Member_id, Name: member.Name, mobile: member.mobileno || member.contactno, profile_image: member.profile_image, role: member.role }, chatRoom },
+});
     } catch (error) {
-        res.status(500).json({ success: false, message: "Failed to search member", error: error.message });
-    }
+    res.status(500).json({ success: false, message: "Failed to search member", error: error.message });
+}
 };
 
 // ─── Send a message ───────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ const sendMessage = async (req, res) => {
                 const participants = parts.sort();
                 const member1 = await MemberModel.findOne({ Member_id: participants[0] });
                 const member2 = await MemberModel.findOne({ Member_id: participants[1] });
-                
+
                 chatRoom = new ChatRoomModel({
                     roomId,
                     participants,

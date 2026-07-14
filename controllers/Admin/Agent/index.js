@@ -239,30 +239,30 @@ const getAgentById = async (req, res) => {
         // Use direct findOne with $or to handle any data type
         const agent = await AgentModel.findOne({
             $or: [
-                { agent_id: agentId },
-                { agent_id: agentId.toString() }
-            ]
+    { agent_id: agentId },
+    { agent_id: agentId.toString() }
+]
         });
 
-        if (!agent) {
-            return res.status(404).json({
-                success: false,
-                message: "Agent not found"
-            });
-        }
+if (!agent) {
+    return res.status(404).json({
+        success: false,
+        message: "Agent not found"
+    });
+}
 
-        res.status(200).json({
-            success: true,
-            message: "Agent fetched successfully",
-            data: agent
-        });
+res.status(200).json({
+    success: true,
+    message: "Agent fetched successfully",
+    data: agent
+});
     } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch agent",
-            error: error.message
-        });
-    }
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch agent",
+        error: error.message
+    });
+}
 };
 
 module.exports = {

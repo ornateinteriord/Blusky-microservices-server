@@ -12,7 +12,7 @@ const MemberSchema = new mongoose.Schema(
     address: { type: String },
     pincode: { type: String },
     country: { type: String },
-    usdt_bep20_address: { type: String },
+    BMS_bep20_address: { type: String },
     Father_name: { type: String },
     gender: { type: String },
     dob: { type: String },
@@ -96,7 +96,7 @@ const MemberSchema = new mongoose.Schema(
     emailid: { type: String, default: null }, // Counterpart to email
     contactno: { type: String, default: null }, // Counterpart to mobileno
     pan_no: { type: String, default: null }, // Counterpart to Pan_no
-    aadharcard_no: { type: String, default: null }, 
+    aadharcard_no: { type: String, default: null },
     voter_id: { type: String, default: null },
     nominee: { type: String, default: null }, // Counterpart to Nominee_name
     relation: { type: String, default: null }, // Counterpart to Nominee_Relation

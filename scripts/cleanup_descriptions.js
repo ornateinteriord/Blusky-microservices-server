@@ -16,7 +16,7 @@ async function cleanupDescriptions() {
     // 1. Update Transactions
     const txs = await TransactionModel.find({ description: { $regex: /Add-On \[/ } });
     console.log(`Found ${txs.length} transactions with ID in brackets.`);
-    
+
     for (const tx of txs) {
       tx.description = tx.description.replace(pattern, "Add-On");
       await tx.save();
@@ -25,7 +25,7 @@ async function cleanupDescriptions() {
     // 2. Update Payouts
     const payouts = await PayoutModel.find({ description: { $regex: /Add-On \[/ } });
     console.log(`Found ${payouts.length} payouts with ID in brackets.`);
-    
+
     for (const p of payouts) {
       p.description = p.description.replace(pattern, "Add-On");
       await p.save();

@@ -81,14 +81,14 @@ const getMemberDetails = async (req, res) => {
     const indirectCount = totalTeamCount - directCount;
 
     if (!foundUser.qr_code && (foundUser.Member_id || foundUser.member_id)) {
-      foundUser.qr_code = `UWC-P2P:${foundUser.Member_id || foundUser.member_id}`;
+      foundUser.qr_code = `BMS-P2P:${foundUser.Member_id || foundUser.member_id}`;
       await foundUser.save();
     }
 
     // Add registration data to response
     const responseData = {
       ...foundUser.toObject(),
-      qr_code: foundUser.qr_code || `UWC-P2P:${foundUser.Member_id || foundUser.member_id}`,
+      qr_code: foundUser.qr_code || `BMS-P2P:${foundUser.Member_id || foundUser.member_id}`,
       registration_stats: {
         direct: directCount,
         indirect: indirectCount,
@@ -127,15 +127,15 @@ const activateMemberPackage = async (req, res) => {
       return res.status(404).json({ success: false, message: "Member not found" });
     }
 
-    // Dynamically accept any USDT Plan amount or "NONE"
+    // Dynamically accept any BMS Plan amount or "NONE"
     let selectedPackage = null;
     if (packageType === "NONE") {
       selectedPackage = { name: "NONE", value: 0 };
-    } else if (packageType && packageType.startsWith("USDT_")) {
-      const amtStr = packageType.replace("USDT_", "");
+    } else if (packageType && packageType.startsWith("BMS_")) {
+      const amtStr = packageType.replace("BMS_", "");
       const amt = Number(amtStr);
       if (!isNaN(amt) && amt > 0) {
-        selectedPackage = { name: "USDT Plan", value: amt };
+        selectedPackage = { name: "BMS Plan", value: amt };
       }
     }
 
@@ -167,14 +167,14 @@ const activateMemberPackage = async (req, res) => {
 
     // ── CASE B: Activation WITH Package ──
     const amount = selectedPackage.value;
-    console.log(`💎 [Activation] Activating ${memberId} WITH $${amount} package.`);
+    console.log(`💎 [Activation] Activating ${memberId} WITH ₹${amount} package.`);
 
     // 1. Update member_tbl basic status
     const updatedMember = await MemberModel.findOneAndUpdate(
       { Member_id: memberId },
       {
         status: "active",
-        spackage: "USDT Plan",
+        spackage: "BMS Plan",
         package_value: amount,
         upgrade_status: "Active", // Activated with package
         Date_of_joining: activationDate,
@@ -208,7 +208,7 @@ const activateMemberPackage = async (req, res) => {
       console.error("Global income distribution failed in activation:", globalIncomeErr);
     }
 
-    // 3. ✅ CREATE "DAY 0" PAYOUT AND TRANSACTION ($0 records)
+    // 3. ✅ CREATE "DAY 0" PAYOUT AND TRANSACTION (₹0 records)
     const payoutId = Date.now() + Math.floor(Math.random() * 1000);
     const payout = new PayoutModel({
       payout_id: payoutId,
@@ -229,7 +229,7 @@ const activateMemberPackage = async (req, res) => {
       member_id: memberId,
       Name: updatedMember.Name,
       mobileno: updatedMember.mobileno,
-      description: `Package Activation – Day 0/300 ($${amount} pkg)`,
+      description: `Package Activation – Day 0/300 (₹${amount} pkg)`,
       transaction_type: "ROI Payout",
       ew_credit: "0",
       ew_debit: "0",
@@ -244,7 +244,7 @@ const activateMemberPackage = async (req, res) => {
     try {
       req.body.new_member_id = memberId;
       req.body.Sponsor_code = updatedMember.Sponsor_code;
-      
+
       const mlmResult = await triggerMLMCommissions(req, {
         status: (code) => ({ json: (data) => data }),
         json: (data) => data
@@ -402,83 +402,83 @@ const updateMemberStatus = async (req, res) => {
 
     // Handle main status update
     if (status) {
-        if (status === 'active' && existingMember.status === 'active') {
-            return res.status(400).json({ success: false, message: "Member is already active." });
-        }
-        updatePayload.status = status;
+      if (status === 'active' && existingMember.status === 'active') {
+        return res.status(400).json({ success: false, message: "Member is already active." });
+      }
+      updatePayload.status = status;
     }
 
     // Handle upgrade_status (UI visibility) update
     if (upgrade_status) {
-        updatePayload.upgrade_status = upgrade_status;
+      updatePayload.upgrade_status = upgrade_status;
     }
 
     // Special logic for first-time activation from Pending
     if (existingMember.upgrade_status === "Pending" && status === "active") {
-        updatePayload.roi_status = 'Active';
-        updatePayload.upgrade_status = 'Active';
-        updatePayload.roi_payout_count = 0;
-        updatePayload.roi_start_date = activationDate;
-        updatePayload.roi_last_payout_date = activationDate;
-        if (existingMember.package_value && existingMember.package_value > 0) {
-            updatePayload.roi_payout_target = (existingMember.package_value || 0) * 3;
-        }
+      updatePayload.roi_status = 'Active';
+      updatePayload.upgrade_status = 'Active';
+      updatePayload.roi_payout_count = 0;
+      updatePayload.roi_start_date = activationDate;
+      updatePayload.roi_last_payout_date = activationDate;
+      if (existingMember.package_value && existingMember.package_value > 0) {
+        updatePayload.roi_payout_target = (existingMember.package_value || 0) * 3;
+      }
     }
 
     const updatedMember = await MemberModel.findOneAndUpdate(query, { $set: updatePayload }, { new: true });
 
     // ✅ Create "Day 0" Payout and Transaction if newly activated (from Pending)
     if (existingMember.upgrade_status === "Pending" && status === "active") {
-        const payoutId = Date.now() + Math.floor(Math.random() * 1000);
-        const payout = new PayoutModel({
-            payout_id: payoutId,
-            date: moment().utcOffset("+05:30").toDate(),
-            memberId: updatedMember.Member_id,
-            payout_type: "ROI",
-            ref_no: `ACT-${updatedMember.Member_id}-0`,
-            amount: 0,
-            count: 0,
-            days: 300,
-            status: "Approved",
-            description: "Package Activation"
-        });
+      const payoutId = Date.now() + Math.floor(Math.random() * 1000);
+      const payout = new PayoutModel({
+        payout_id: payoutId,
+        date: moment().utcOffset("+05:30").toDate(),
+        memberId: updatedMember.Member_id,
+        payout_type: "ROI",
+        ref_no: `ACT-${updatedMember.Member_id}-0`,
+        amount: 0,
+        count: 0,
+        days: 300,
+        status: "Approved",
+        description: "Package Activation"
+      });
 
-        const activationTx = new TransactionModel({
-            transaction_id: `ACT-TX-${payoutId}`,
-            transaction_date: activationDate,
-            member_id: updatedMember.Member_id,
-            Name: updatedMember.Name,
-            mobileno: updatedMember.mobileno,
-            description: `Package Activation – Daily ROI (Day 0/300)`,
-            transaction_type: "ROI Payout",
-            ew_credit: "0",
-            ew_debit: "0",
-            status: "Completed",
-            benefit_type: "ROI",
-            reference_no: payout.ref_no
-        });
-        await Promise.all([payout.save(), activationTx.save()]);
+      const activationTx = new TransactionModel({
+        transaction_id: `ACT-TX-${payoutId}`,
+        transaction_date: activationDate,
+        member_id: updatedMember.Member_id,
+        Name: updatedMember.Name,
+        mobileno: updatedMember.mobileno,
+        description: `Package Activation – Daily ROI (Day 0/300)`,
+        transaction_type: "ROI Payout",
+        ew_credit: "0",
+        ew_debit: "0",
+        status: "Completed",
+        benefit_type: "ROI",
+        reference_no: payout.ref_no
+      });
+      await Promise.all([payout.save(), activationTx.save()]);
 
-        try {
-            // Trigger MLM commissions
-            await triggerMLMCommissions({
-              body: {
-                new_member_id: updatedMember.Member_id,
-                Sponsor_code: updatedMember.sponsor_id || updatedMember.Sponsor_code
-              }
-            }, {
-              status: (code) => ({ json: (data) => data }),
-              json: (data) => data
-            });
-        } catch (mlmError) {
-            console.error("MLM Commission Error:", mlmError);
-        }
+      try {
+        // Trigger MLM commissions
+        await triggerMLMCommissions({
+          body: {
+            new_member_id: updatedMember.Member_id,
+            Sponsor_code: updatedMember.sponsor_id || updatedMember.Sponsor_code
+          }
+        }, {
+          status: (code) => ({ json: (data) => data }),
+          json: (data) => data
+        });
+      } catch (mlmError) {
+        console.error("MLM Commission Error:", mlmError);
+      }
     }
 
-    return res.status(200).json({ 
-        success: true, 
-        message: "Member status updated", 
-        data: updatedMember 
+    return res.status(200).json({
+      success: true,
+      message: "Member status updated",
+      data: updatedMember
     });
   } catch (error) {
     console.error("Error updating member status:", error);

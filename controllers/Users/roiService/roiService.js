@@ -43,7 +43,7 @@ const GLOBAL_LOCK_TIMEOUT = 30 * 60 * 1000; // 30 minutes
  */
 const processDailyROI = async (targetMemberId = null, customToday = null) => {
     const currentTime = Date.now();
-    
+
     // Global lock only applies if processing ALL members
     if (!targetMemberId && !customToday) {
         if (isROIProcessing && (currentTime - lastGlobalProcessTime < GLOBAL_LOCK_TIMEOUT)) {
@@ -82,7 +82,7 @@ const processDailyROI = async (targetMemberId = null, customToday = null) => {
             return { success: true, message: "Member not eligible", processedCount: 0 };
         }
 
-        console.log(`🚀 [ROI] [${today.format("YYYY-MM-DD")}] Starting ${targetMemberId ? `Targeted (${targetMemberId})` : "Global"} Processing for ${activeMembers.length} active members...`);
+        console.log(`🚀 [ROI] [${today.format("YYYY-MM-DD")}] Starting ${targetMemberId ? `Targeted(${ targetMemberId })` : "Global"} Processing for ${activeMembers.length} active members...`);
 
         let totalPayoutsProcessed = 0;
         let membersUpdatedCount = 0;
@@ -98,7 +98,7 @@ const processDailyROI = async (targetMemberId = null, customToday = null) => {
                 // Once set, it is never changed, so the base daily ROI stays constant.
                 if (!member.roi_payout_target || member.roi_payout_target === 0) {
                     member.roi_payout_target = (member.package_value || 0) * 3;
-                    console.log(`🔒 [ROI] Freezing base roi_payout_target for ${member.Member_id}: $${member.roi_payout_target} (base package_value: $${member.package_value})`);
+                    console.log(`🔒 [ROI] Freezing base roi_payout_target for ${member.Member_id}: ₹${member.roi_payout_target} (base package_value: ₹${member.package_value})`);
                 }
 
                 // Skip if already completed
@@ -196,7 +196,7 @@ const processDailyROI = async (targetMemberId = null, customToday = null) => {
                     await session.commitTransaction();
                     if (memberPayoutsThisRun > 0) {
                         membersUpdatedCount++;
-                        console.log(`💰 [Base ROI] [Day ${member.roi_payout_count}/120] $${memberPayoutsThisRun} days to ${member.Member_id}.`);
+                        console.log(`💰 [Base ROI] [Day ${member.roi_payout_count}/120] ₹${memberPayoutsThisRun} days to ${member.Member_id}.`);
                     }
                 } else {
                     await session.abortTransaction();
@@ -283,7 +283,7 @@ const processDailyROI = async (targetMemberId = null, customToday = null) => {
                                     count: nextCount,
                                     days: 120,
                                     status: "Approved",
-                                    description: `Add-On – $${addon.amount} package`
+                                    description: `Add-On – ₹${addon.amount} package`
                                 });
 
                                 // ✅ Transaction clearly shows which add-on generated this ROI
@@ -293,7 +293,7 @@ const processDailyROI = async (targetMemberId = null, customToday = null) => {
                                     member_id: addon.member_id,
                                     Name: member.Name,
                                     mobileno: member.mobileno,
-                                    description: `Add-On ROI – Day ${nextCount}/120 ($${addon.amount} pkg)`,
+                                    description: `Add-On ROI – Day ${nextCount}/120 (₹${addon.amount} pkg)`,
                                     transaction_type: "ROI Payout",
                                     ew_credit: dailyPayoutAmount.toString(),
                                     ew_debit: "0",
@@ -338,7 +338,7 @@ const processDailyROI = async (targetMemberId = null, customToday = null) => {
                     await session.commitTransaction();
                     if (addonPayoutsThisRun > 0) {
                         addonsUpdatedCount++;
-                        console.log(`💰 [Add-On ${addon.package_id}] [Day ${addon.roi_payout_count}/120] $${lastAddonDailyAmt}/day to ${addon.member_id}.`);
+                        console.log(`💰 [Add-On ${addon.package_id}] [Day ${addon.roi_payout_count}/120] ₹${lastAddonDailyAmt}/day to ${addon.member_id}.`);
                     }
                 } else {
                     await session.abortTransaction();
@@ -415,10 +415,10 @@ const processMemberROI = async (member) => {
         if (nextIdx >= 120) member.roi_status = "Completed";
 
         await Promise.all([payout.save({ session }), transaction.save({ session }), member.save({ session })]);
-        
+
         // Distribute Level Commissions (MLM) - NOW ATOMIC
         await mlmService.distributeROICommission(member.Member_id, dailyAmt, session, todayStr);
-        
+
         await session.commitTransaction();
 
         return { success: true, amount: dailyAmt };
@@ -466,7 +466,7 @@ const processAddOnROI = async (addon, member) => {
         }
 
         const pId = Date.now() + Math.floor(Math.random() * 1000);
-        
+
         // Create Payout Entry
         const payout = new PayoutModel({
             payout_id: pId,
@@ -478,7 +478,7 @@ const processAddOnROI = async (addon, member) => {
             count: nextIdx,
             days: 120,
             status: "Approved",
-            description: `Add-On – $${addon.amount} package`
+            description: `Add-On – ₹${addon.amount} package`
         });
 
         // Create Transaction Record

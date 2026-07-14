@@ -58,35 +58,35 @@ const findUplineSponsors = async (memberId, maxLevels = 15) => {
       $or: [{ Member_id: currentMemberId }, { member_id: currentMemberId }]
     });
 
-    const sponsorIdentifier = currentMember?.sponsor_id || currentMember?.Sponsor_code || currentMember?.introducer;
-    if (!currentMember || !sponsorIdentifier) {
-      break; // No more sponsors in the chain
-    }
+const sponsorIdentifier = currentMember?.sponsor_id || currentMember?.Sponsor_code || currentMember?.introducer;
+if (!currentMember || !sponsorIdentifier) {
+  break; // No more sponsors in the chain
+}
 
-    const sponsor = await MemberModel.findOne({
+const sponsor = await MemberModel.findOne({
       $or: [{ Member_id: sponsorIdentifier }, { member_id: sponsorIdentifier }, { member_code: sponsorIdentifier }]
     });
-    if (!sponsor) {
-      break; // Sponsor not found
-    }
+if (!sponsor) {
+  break; // Sponsor not found
+}
 
-    level++;
-    uplineSponsors.push({
-      level: level,
-      sponsor_id: sponsor.Member_id,
-      Sponsor_code: sponsor.member_code || sponsor.Member_id,
-      sponsor_name: sponsor.Name,
-      sponsor_mobileno: sponsor.mobileno,
-      sponsored_member_id: currentMemberId, // The member who triggered this commission
-      sponsor_status: sponsor.status
-    });
+level++;
+uplineSponsors.push({
+  level: level,
+  sponsor_id: sponsor.Member_id,
+  Sponsor_code: sponsor.member_code || sponsor.Member_id,
+  sponsor_name: sponsor.Name,
+  sponsor_mobileno: sponsor.mobileno,
+  sponsored_member_id: currentMemberId, // The member who triggered this commission
+  sponsor_status: sponsor.status
+});
 
-    // Move up the chain
-    currentMemberId = sponsor.Member_id || sponsor.member_id;
+// Move up the chain
+currentMemberId = sponsor.Member_id || sponsor.member_id;
   }
 
-  // console.log(`📊 Found ${uplineSponsors.length} upline sponsors for member ${memberId}`);
-  return uplineSponsors;
+// console.log(`📊 Found ${uplineSponsors.length} upline sponsors for member ${memberId}`);
+return uplineSponsors;
 };
 
 
@@ -140,10 +140,10 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
             percentage: refPercentage,
             packageValue: packageValue,
             payout_type: `Level ${upline.level} Referral Bonus (${pkgType})`,
-            description: `Level ${upline.level} Referral commission (${refPercentage}%) from member ${newMemberId}'s ${pkgType} package ($${packageValue})`,
+            description: `Level ${upline.level} Referral commission (${refPercentage}%) from member ${newMemberId}'s ${pkgType} package (₹${packageValue})`,
             sponsor_status: upline.sponsor_status
           });
-          console.log(`✅ [REFERRAL BONUS] Level ${upline.level}: ${upline.sponsor_name} (${upline.sponsor_id}) gets $${refAmount} (${refPercentage}%)`);
+          console.log(`✅ [REFERRAL BONUS] Level ${upline.level}: ${upline.sponsor_name} (${upline.sponsor_id}) gets ₹${refAmount} (${refPercentage}%)`);
         }
       }
 
@@ -165,10 +165,10 @@ const calculateCommissions = async (newMemberId, directSponsorId, specificAmount
             percentage: levelPercentage,
             packageValue: packageValue,
             payout_type: `Level ${upline.level} Level Bonus (${pkgType})`,
-            description: `Level ${upline.level} Benefits commission (${levelPercentage}%) from member ${newMemberId}'s ${pkgType} package ($${packageValue})`,
+            description: `Level ${upline.level} Benefits commission (${levelPercentage}%) from member ${newMemberId}'s ${pkgType} package (₹${packageValue})`,
             sponsor_status: upline.sponsor_status
           });
-          console.log(`✅ [LEVEL BONUS] Level ${upline.level}: ${upline.sponsor_name} (${upline.sponsor_id}) gets $${levelAmount} (${levelPercentage}%)`);
+          console.log(`✅ [LEVEL BONUS] Level ${upline.level}: ${upline.sponsor_name} (${upline.sponsor_id}) gets ₹${levelAmount} (${levelPercentage}%)`);
         }
       }
     }
@@ -263,7 +263,7 @@ const processCommissions = async (commissions, session = null) => {
           status: "CREDITED",
           credited_at: new Date()
         });
-        
+
         await commissionRecord.save({ session });
 
         results.push({
@@ -327,20 +327,20 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
     await MemberModel.findOneAndUpdate(
       { Member_id: memberId },
       { 
-        $inc: { 
-          wallet_balance: earningsAmount,
-          upgrade_wallet: upgradeAmount 
-        } 
+        $inc: {
+  wallet_balance: earningsAmount,
+    upgrade_wallet: upgradeAmount
+} 
       },
-      { session }
+{ session }
     );
 
-    return transaction;
+return transaction;
 
   } catch (error) {
-    console.error("❌ Error creating transaction:", error);
-    throw error;
-  }
+  console.error("❌ Error creating transaction:", error);
+  throw error;
+}
 };
 
 const updateSponsorReferrals = async (sponsorId, newMemberId) => {
@@ -359,12 +359,12 @@ const updateSponsorReferrals = async (sponsorId, newMemberId) => {
       }
     );
 
-    console.log(`✅ Updated referrals for ${sponsorId}: Added ${newMemberId}`);
+console.log(`✅ Updated referrals for ${sponsorId}: Added ${newMemberId}`);
 
   } catch (error) {
-    console.error("❌ Error updating referrals:", error);
-    throw error;
-  }
+  console.error("❌ Error updating referrals:", error);
+  throw error;
+}
 };
 
 const getUplineTree = async (memberId, maxLevels = 15) => {
@@ -549,7 +549,7 @@ const distributeROICommission = async (memberId, roiAmount, session = null, cust
         status: "Completed",
         Name: upline.sponsor_name,
         mobileno: upline.sponsor_mobileno,
-        description: `ROI Level ${upline.level} benefit (${percentage}%) from member ${memberId}'s ROI ($${roiAmount})`,
+        description: `ROI Level ${upline.level} benefit (${percentage}%) from member ${memberId}'s ROI (₹${roiAmount})`,
         sponsor_status: upline.sponsor_status
       });
 
@@ -593,7 +593,7 @@ const distributeROICommission = async (memberId, roiAmount, session = null, cust
         success: true
       });
 
-      console.log(`💰 ROI Level ${upline.level}: ${upline.sponsor_id} gets $${commissionAmount} from ${memberId}`);
+      console.log(`💰 ROI Level ${upline.level}: ${upline.sponsor_id} gets ₹${commissionAmount} from ${memberId}`);
     }
 
     return results;

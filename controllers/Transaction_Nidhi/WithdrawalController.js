@@ -192,7 +192,7 @@ exports.approveWithdrawal = async (req, res) => {
                 // ✅ NEW: INTEGRATE WITH BANKING PAYMENTS
                 try {
                     console.log(`🧾 [Banking] Generating Payment Voucher for Withdrawal: ${request_id}`);
-                    
+
                     // 1. Generate Payment ID
                     const lastPayment = await PaymentsModel.findOne().sort({ payment_id: -1 }).limit(1);
                     let newPaymentId = "PAY0001";

@@ -19,83 +19,83 @@ const getMyAccounts = async (req, res) => {
             {
                 $match: {
                     $or: [
-                        { member_id: memberId },           // String comparison
-                        { member_id: parseInt(memberId) }   // Number comparison
-                    ]
-                }
+        { member_id: memberId },           // String comparison
+        { member_id: parseInt(memberId) }   // Number comparison
+    ]
+}
             },
-            {
+{
                 $lookup: {
-                    from: "account_group_tbl",
-                    localField: "account_type",
-                    foreignField: "account_group_id",
+        from: "account_group_tbl",
+            localField: "account_type",
+                foreignField: "account_group_id",
                     as: "groupInfo"
-                }
-            },
-            {
+    }
+},
+{
                 $unwind: {
-                    path: "$groupInfo",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
+        path: "$groupInfo",
+            preserveNullAndEmptyArrays: true
+    }
+},
+{
                 $group: {
-                    _id: "$account_type",
-                    account_group_name: { $first: "$groupInfo.account_group_name" },
-                    count: { $sum: 1 },
-                    accounts: {
+        _id: "$account_type",
+            account_group_name: { $first: "$groupInfo.account_group_name" },
+        count: { $sum: 1 },
+        accounts: {
                         $push: {
-                            account_id: "$account_id",
-                            member_id: "$member_id",
-                            account_no: "$account_no",
+                account_id: "$account_id",
+                    member_id: "$member_id",
+                        account_no: "$account_no",
                             account_type: "$account_type",
-                            account_amount: "$account_amount",
-                            status: "$status",
-                            date_of_opening: "$date_of_opening"
-                        }
-                    }
-                }
-            },
-            {
-                $project: {
-                    _id: 0,
-                    account_type: "$_id",
-                    account_group_name: 1,
-                    count: 1,
-                    accounts: 1
-                }
-            },
-            {
-                $sort: { account_type: 1 }
+                                account_amount: "$account_amount",
+                                    status: "$status",
+                                        date_of_opening: "$date_of_opening"
             }
+        }
+    }
+},
+{
+                $project: {
+        _id: 0,
+            account_type: "₹_id",
+                account_group_name: 1,
+                    count: 1,
+                        accounts: 1
+    }
+},
+{
+                $sort: { account_type: 1 }
+}
         ]);
 
-        // Calculate total balance across all accounts
-        const totalBalance = accounts.reduce((sum, accountType) => {
-            // Sum all account_amount values in this account type
-            const typeBalance = accountType.accounts.reduce((typeSum, account) => {
-                return typeSum + (account.account_amount || 0);
-            }, 0);
-            return sum + typeBalance;
-        }, 0);
+// Calculate total balance across all accounts
+const totalBalance = accounts.reduce((sum, accountType) => {
+    // Sum all account_amount values in this account type
+    const typeBalance = accountType.accounts.reduce((typeSum, account) => {
+        return typeSum + (account.account_amount || 0);
+    }, 0);
+    return sum + typeBalance;
+}, 0);
 
-        res.status(200).json({
-            success: true,
-            message: "Member accounts fetched successfully",
-            data: {
-                accountTypes: accounts,
-                totalAccounts: accounts.reduce((sum, acc) => sum + acc.count, 0),
-                totalBalance: totalBalance
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching member accounts:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch member accounts",
-            error: error.message
-        });
+res.status(200).json({
+    success: true,
+    message: "Member accounts fetched successfully",
+    data: {
+        accountTypes: accounts,
+        totalAccounts: accounts.reduce((sum, acc) => sum + acc.count, 0),
+        totalBalance: totalBalance
     }
+});
+    } catch (error) {
+    console.error("Error fetching member accounts:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch member accounts",
+        error: error.message
+    });
+}
 };
 
 // Update logged-in member's profile
@@ -132,34 +132,34 @@ const updateMyProfile = async (req, res) => {
         const updatedMember = await MemberModel.findOneAndUpdate(
             { 
                 $or: [
-                    { member_id: memberId },
-                    { Member_id: memberId }
-                ]
+    { member_id: memberId },
+    { Member_id: memberId }
+]
             },
-            { $set: updateData },
-            { new: true, runValidators: true }
+{ $set: updateData },
+{ new: true, runValidators: true }
         );
 
-        if (!updatedMember) {
-            return res.status(404).json({
-                success: false,
-                message: "Member not found"
-            });
-        }
+if (!updatedMember) {
+    return res.status(404).json({
+        success: false,
+        message: "Member not found"
+    });
+}
 
-        res.status(200).json({
-            success: true,
-            message: "Profile updated successfully",
-            data: updatedMember
-        });
+res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    data: updatedMember
+});
     } catch (error) {
-        console.error("Error updating profile:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to update profile",
-            error: error.message
-        });
-    }
+    console.error("Error updating profile:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to update profile",
+        error: error.message
+    });
+}
 };
 
 // Get member basic info (for recipient lookup during transfer)
@@ -169,46 +169,46 @@ const getMemberBasicInfo = async (req, res) => {
 
         const member = await MemberModel.findOne({
             $or: [
-                { member_id: memberId },
-                { Member_id: memberId }
-            ]
+    { member_id: memberId },
+    { Member_id: memberId }
+]
         });
 
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: "Member not found"
-            });
-        }
+if (!member) {
+    return res.status(404).json({
+        success: false,
+        message: "Member not found"
+    });
+}
 
-        const userRole = req.user?.role;
-        const isAdmin = userRole === "ADMIN" || userRole === "ADMIN_01";
+const userRole = req.user?.role;
+const isAdmin = userRole === "ADMIN" || userRole === "ADMIN_01";
 
-        if (member.status !== "active" && !isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: "Member account is not active"
-            });
-        }
+if (member.status !== "active" && !isAdmin) {
+    return res.status(403).json({
+        success: false,
+        message: "Member account is not active"
+    });
+}
 
-        res.status(200).json({
-            success: true,
-            message: "Member info fetched successfully",
-            data: {
-                member_id: member.member_id || member.Member_id,
-                name: member.name || member.Name,
-                contactno: member.contactno || member.mobileno,
-                emailid: member.emailid || member.email
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching member info:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch member info",
-            error: error.message
-        });
+res.status(200).json({
+    success: true,
+    message: "Member info fetched successfully",
+    data: {
+        member_id: member.member_id || member.Member_id,
+        name: member.name || member.Name,
+        contactno: member.contactno || member.mobileno,
+        emailid: member.emailid || member.email
     }
+});
+    } catch (error) {
+    console.error("Error fetching member info:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch member info",
+        error: error.message
+    });
+}
 };
 
 // Get member's accounts (without balance - for recipient account selection)
@@ -219,84 +219,84 @@ const getMemberAccountsPublic = async (req, res) => {
         // Verify member exists and is active
         const member = await MemberModel.findOne({
             $or: [
-                { member_id: memberId },
-                { Member_id: memberId }
-            ]
+    { member_id: memberId },
+    { Member_id: memberId }
+]
         });
 
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: "Member not found"
-            });
-        }
+if (!member) {
+    return res.status(404).json({
+        success: false,
+        message: "Member not found"
+    });
+}
 
-        const userRole = req.user?.role;
-        const isAdmin = userRole === "ADMIN" || userRole === "ADMIN_01";
+const userRole = req.user?.role;
+const isAdmin = userRole === "ADMIN" || userRole === "ADMIN_01";
 
-        if (member.status !== "active" && !isAdmin) {
-            return res.status(403).json({
-                success: false,
-                message: "Member account is not active"
-            });
-        }
+if (member.status !== "active" && !isAdmin) {
+    return res.status(403).json({
+        success: false,
+        message: "Member account is not active"
+    });
+}
 
-        // Get accounts with account group names but WITHOUT balances
-        // Handle both string and number types for member_id
-        const accounts = await AccountsModel.aggregate([
-            {
+// Get accounts with account group names but WITHOUT balances
+// Handle both string and number types for member_id
+const accounts = await AccountsModel.aggregate([
+    {
                 $match: {
                     $or: [
-                        { member_id: memberId },           // String comparison
-                        { member_id: parseInt(memberId) }   // Number comparison
-                    ],
-                    status: isAdmin ? { $in: ["active", "pending"] } : "active"
-                }
+        { member_id: memberId },           // String comparison
+        { member_id: parseInt(memberId) }   // Number comparison
+    ],
+        status: isAdmin ? { $in: ["active", "pending"] } : "active"
+}
             },
-            {
+{
                 $lookup: {
-                    from: "account_group_tbl",
-                    localField: "account_type",
-                    foreignField: "account_group_id",
+        from: "account_group_tbl",
+            localField: "account_type",
+                foreignField: "account_group_id",
                     as: "groupInfo"
-                }
-            },
-            {
+    }
+},
+{
                 $unwind: {
-                    path: "$groupInfo",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
+        path: "$groupInfo",
+            preserveNullAndEmptyArrays: true
+    }
+},
+{
                 $project: {
-                    _id: 1,
-                    account_id: 1,
-                    account_no: 1,
+        _id: 1,
+            account_id: 1,
+                account_no: 1,
                     account_type: 1,
-                    account_group_name: "$groupInfo.account_group_name",
-                    date_of_opening: 1,
-                    account_amount: 1,
-                    status: 1
-                }
-            },
-            {
+                        account_group_name: "$groupInfo.account_group_name",
+                            date_of_opening: 1,
+                                account_amount: 1,
+                                    status: 1
+    }
+},
+{
                 $sort: { date_of_opening: -1 }
-            }
+}
         ]);
 
-        res.status(200).json({
-            success: true,
-            message: "Member accounts fetched successfully",
-            data: accounts
-        });
+res.status(200).json({
+    success: true,
+    message: "Member accounts fetched successfully",
+    data: accounts
+});
     } catch (error) {
-        console.error("Error fetching member accounts:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch member accounts",
-            error: error.message
-        });
-    }
+    console.error("Error fetching member accounts:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch member accounts",
+        error: error.message
+    });
+}
 };
 
 // Get member transactions with optional account_type filter
@@ -400,7 +400,7 @@ const getMemberInterestsByAccountGroup = async (req, res) => {
 
         const groupNameUpper = accountGroup.account_group_name?.toUpperCase() || "";
         let planType = planTypeMapping[groupNameUpper];
-        
+
         console.log(`[MemberInterests] Group: ${groupNameUpper}, Mapped PlanType: ${planType}`);
 
         // If no direct mapping, try partial matches
@@ -425,27 +425,27 @@ const getMemberInterestsByAccountGroup = async (req, res) => {
 
         const interests = await InterestModel.find({
             $or: [
-                { plan_type: planType },
-                { ref_id: account_group_id } // Also support direct ID matching
-            ],
-            status: { $regex: /^active$/i }
+    { plan_type: planType },
+    { ref_id: account_group_id } // Also support direct ID matching
+],
+    status: { $regex: /^active₹/i }
         }).sort({ createdAt: -1 });
 
-        console.log(`[MemberInterests] Found ${interests.length} interests for ${planType}`);
+console.log(`[MemberInterests] Found ${interests.length} interests for ${planType}`);
 
-        res.status(200).json({
-            success: true,
-            message: "Interests fetched successfully",
-            data: interests
-        });
+res.status(200).json({
+    success: true,
+    message: "Interests fetched successfully",
+    data: interests
+});
     } catch (error) {
-        console.error("Error fetching interests:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch interests",
-            error: error.message
-        });
-    }
+    console.error("Error fetching interests:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch interests",
+        error: error.message
+    });
+}
 };
 
 // Create a new member account (Self-Service)
@@ -525,7 +525,7 @@ const createMemberAccount = async (req, res) => {
         // Professional Account Number Generation
         // Format: [PREFIX][SEQUENCE]
         // Example: SB000001, RD000001, PIG000001
-        
+
         const groupName = accountGroup.account_group_name?.toUpperCase() || "";
         let typePrefix = "ACC";
         if (groupName.includes("SAVING") || groupName === "SB") typePrefix = "SB";
@@ -535,7 +535,7 @@ const createMemberAccount = async (req, res) => {
         else if (groupName.includes("PIGMY") || groupName === "PIG") typePrefix = "PIG";
         else if (groupName.includes("MONTHLY") || groupName === "MIS") typePrefix = "MI";
         else if (groupName.includes("DAILY")) typePrefix = "PIG";
-        
+
         // Find the last account with this prefix to determine next sequence
         const lastAccountWithPrefix = await AccountsModel.findOne({
             account_no: { $regex: new RegExp(`^${typePrefix}`) }

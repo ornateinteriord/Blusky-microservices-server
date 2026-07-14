@@ -57,7 +57,7 @@ const requestAddOn = async (req, res) => {
         const lastIdNumber = parseInt(lastTransaction.transaction_id.replace(/\D/g, ""), 10) || 0;
         newTransactionId = lastIdNumber + 1;
       }
-      
+
       const newTransaction = new TransactionModel({
         transaction_id: newTransactionId.toString(),
         transaction_date: new Date(),
@@ -108,65 +108,65 @@ const getAllRequests = async (req, res) => {
 const getMemberAddOns = async (req, res) => {
   try {
     const { member_id } = req.params;
-    
+
     // 1. Fetch standard add-on packages
     const addons = await AddOnPackageModel.find({
       member_id
     }).sort({ createdAt: 1 });
-    
+
     // 2. Fetch FD accounts from accounts_tbl
     // First get the group IDs for FD
     const fdGroups = await AccountGroupModel.find({
-        account_group_name: { $regex: /FIXED DEPOSIT|FD/i }
+      account_group_name: { $regex: /FIXED DEPOSIT|FD/i }
     }).select('account_group_id');
-    
+
     const fdGroupIds = fdGroups.map(g => g.account_group_id);
-    
+
     const fdAccounts = await AccountsModel.find({
-        member_id: member_id,
-        $or: [
-            { account_type: { $in: fdGroupIds } },
-            { account_no: { $regex: /^FD/i } }
-        ],
-        status: { $ne: "closed" }
+      member_id: member_id,
+      $or: [
+        { account_type: { $in: fdGroupIds } },
+        { account_no: { $regex: /^FD/i } }
+      ],
+      status: { $ne: "closed" }
     });
-    
+
     // 3. Map FD accounts to look like addons
     const mappedFDs = fdAccounts.map(acc => {
-        // Calculate progress for FD if possible
-        let progressCount = 0;
-        if (acc.date_of_opening && acc.date_of_maturity) {
-            const start = moment(acc.date_of_opening);
-            const end = moment(acc.date_of_maturity);
-            const now = moment();
-            const totalDays = end.diff(start, 'days');
-            const elapsedDays = now.diff(start, 'days');
-            
-            if (totalDays > 0) {
-                // Map to 300 scale for frontend compatibility if needed, 
-                // or we'll handle it in frontend
-                progressCount = Math.max(0, Math.min(elapsedDays, totalDays));
-                // If we want to use the frontend's /300 logic:
-                // progressCount = (elapsedDays / totalDays) * 300;
-            }
-        }
+      // Calculate progress for FD if possible
+      let progressCount = 0;
+      if (acc.date_of_opening && acc.date_of_maturity) {
+        const start = moment(acc.date_of_opening);
+        const end = moment(acc.date_of_maturity);
+        const now = moment();
+        const totalDays = end.diff(start, 'days');
+        const elapsedDays = now.diff(start, 'days');
 
-        return {
-            package_id: acc.account_no || acc.account_id,
-            member_id: acc.member_id,
-            amount: acc.account_amount,
-            roi_status: acc.status === 'active' ? 'Active' : 'Pending',
-            roi_payout_target: acc.net_amount || (acc.account_amount + (acc.interest_amount || 0)),
-            roi_payout_count: progressCount, 
-            roi_start_date: acc.date_of_opening,
-            isFD: true,
-            interest_rate: acc.interest_rate,
-            duration: acc.duration,
-            date_of_maturity: acc.date_of_maturity,
-            account_type_name: "Fixed Deposit"
-        };
+        if (totalDays > 0) {
+          // Map to 300 scale for frontend compatibility if needed, 
+          // or we'll handle it in frontend
+          progressCount = Math.max(0, Math.min(elapsedDays, totalDays));
+          // If we want to use the frontend's /300 logic:
+          // progressCount = (elapsedDays / totalDays) * 300;
+        }
+      }
+
+      return {
+        package_id: acc.account_no || acc.account_id,
+        member_id: acc.member_id,
+        amount: acc.account_amount,
+        roi_status: acc.status === 'active' ? 'Active' : 'Pending',
+        roi_payout_target: acc.net_amount || (acc.account_amount + (acc.interest_amount || 0)),
+        roi_payout_count: progressCount,
+        roi_start_date: acc.date_of_opening,
+        isFD: true,
+        interest_rate: acc.interest_rate,
+        duration: acc.duration,
+        date_of_maturity: acc.date_of_maturity,
+        account_type_name: "Fixed Deposit"
+      };
     });
-    
+
     // Combine them
     const combinedAddOns = [...addons, ...mappedFDs];
 
@@ -237,15 +237,15 @@ const evaluateRequest = async (req, res) => {
           { $inc: { top_up_wallet: Number(request.requested_amount) } }
         );
 
-        console.log(`✅ Top Up Wallet credited: $${request.requested_amount} for ${request.member_id}`);
+        console.log(`✅ Top Up Wallet credited: ₹${request.requested_amount} for ${request.member_id}`);
 
         // Send Email Notification
         const memberEmail = member.Email || member.email;
         if (memberEmail) {
           const { htmlContent, subject } = generateTopUpApprovedEmail(member.Name, request.requested_amount);
           const attachments = [{
-            filename: 'USDT.png',
-            path: require('path').join(__dirname, '../../utils/USDT.png'),
+            filename: 'BMS.png',
+            path: require('path').join(__dirname, '../../utils/BMS.png'),
             cid: 'bmslogo'
           }];
           await sendMail(memberEmail, subject, htmlContent, "Top Up Approved", attachments);
@@ -270,7 +270,7 @@ const evaluateRequest = async (req, res) => {
             const lastIdNumber = parseInt(lastTransaction.transaction_id.replace(/\D/g, ""), 10) || 0;
             newTransactionId = lastIdNumber + 1;
           }
-          
+
           const newTransaction = new TransactionModel({
             transaction_id: newTransactionId.toString(),
             transaction_date: new Date(),
@@ -342,14 +342,14 @@ const buyPackageDirectly = async (req, res) => {
     // 1. Verify Top Up Balance for Payer
     const transactions = await TransactionModel.find({ member_id: member_id });
     const topUpTransactions = transactions.filter(tx => tx.transaction_type === 'Top up');
-    
+
     const topUpCredits = topUpTransactions
       .filter(tx => tx.status === 'Completed' || tx.status === 'Approved')
       .reduce((acc, tx) => acc + (parseFloat(tx.ew_credit) || 0), 0);
     const topUpDebits = topUpTransactions
       .filter(tx => tx.status === 'Completed' || tx.status === 'Approved')
       .reduce((acc, tx) => acc + (parseFloat(tx.ew_debit) || 0), 0);
-    
+
     const topUpBalance = Math.max(0, topUpCredits - topUpDebits);
 
     if (topUpBalance < Number(requested_amount)) {
@@ -394,14 +394,14 @@ const buyPackageDirectly = async (req, res) => {
 
     // 3. Create Package & Single Leg Income Logic for Target Member
     const request_id = `DIR${Date.now()}`; // Pseudo request ID for tracking
-    
+
     // CASE A: Primary Package
     if (!targetMember.package_value || targetMember.package_value === 0) {
       targetMember.package_value = requested_amount;
       targetMember.spackage = `PKG-${requested_amount}`;
       targetMember.status = "active";
       await targetMember.save();
-    } 
+    }
     // CASE B: Add-On Package
     else {
       const newAddOn = new AddOnPackageModel({
@@ -414,15 +414,15 @@ const buyPackageDirectly = async (req, res) => {
       await newAddOn.save();
     }
 
-      try {
-        const { distributeGlobalIncome } = require("./globalIncomeService");
-        await distributeGlobalIncome(finalTargetId, requested_amount);
-      } catch (globalIncomeErr) {
-        console.error("Global income distribution failed:", globalIncomeErr);
-      }
+    try {
+      const { distributeGlobalIncome } = require("./globalIncomeService");
+      await distributeGlobalIncome(finalTargetId, requested_amount);
+    } catch (globalIncomeErr) {
+      console.error("Global income distribution failed:", globalIncomeErr);
+    }
     // --- NEW: Single Leg Income (1.5% cashback to the user themselves + up to 100 previous buyers of the same package) ---
     const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
-    
+
     if (singleLineIncomeAmount > 0) {
       // Split 50/50 between Earnings Wallet and Upgrade Wallet
       const earningsAmount = Number((singleLineIncomeAmount / 2).toFixed(2));
@@ -431,23 +431,23 @@ const buyPackageDirectly = async (req, res) => {
       // 2. Give Single Leg Income to up to 100 previous buyers of the exact same package
       try {
         // Find previous buyers of this exact package amount (handle both string and number types)
-        const primaryBuyers = await MemberModel.find({ 
-          package_value: { $in: [requested_amount, requested_amount.toString()] }, 
-          Member_id: { $ne: finalTargetId } 
+        const primaryBuyers = await MemberModel.find({
+          package_value: { $in: [requested_amount, requested_amount.toString()] },
+          Member_id: { $ne: finalTargetId }
         }).select('Member_id Name mobileno createdAt').lean();
-        
-        const addonBuyers = await AddOnPackageModel.find({ 
-          amount: { $in: [requested_amount, requested_amount.toString()] }, 
-          member_id: { $ne: finalTargetId } 
+
+        const addonBuyers = await AddOnPackageModel.find({
+          amount: { $in: [requested_amount, requested_amount.toString()] },
+          member_id: { $ne: finalTargetId }
         }).select('member_id createdAt').lean();
-        
+
         console.log(`=== SINGLE LEG INCOME DISTRIBUTION START ===`);
-        console.log(`Buyer: ${finalTargetId}, Package Amount: $${requested_amount}`);
-        
+        console.log(`Buyer: ${finalTargetId}, Package Amount: ₹${requested_amount}`);
+
         const targetMemberTime = new Date(targetMember.createdAt).getTime();
         const targetMemberId = targetMember.Member_id;
         const eligibleMap = new Map(); // Use map to keep only unique members
-        
+
         for (const buyer of primaryBuyers) {
           const buyerTime = new Date(buyer.createdAt).getTime();
           // Only include upliners (registered BEFORE this user, or same time but lower Member ID)
@@ -455,7 +455,7 @@ const buyPackageDirectly = async (req, res) => {
             eligibleMap.set(buyer.Member_id, { id: buyer.Member_id, name: buyer.Name, phone: buyer.mobileno, time: buyerTime });
           }
         }
-        
+
         for (const addon of addonBuyers) {
           if (!eligibleMap.has(addon.member_id)) {
             const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Member_id Name mobileno createdAt').lean();
@@ -468,7 +468,7 @@ const buyPackageDirectly = async (req, res) => {
             }
           }
         }
-        
+
         // Sort by time (oldest to newest) to find the chronological line, and take the 100 most recent ones before this user
         let eligibleMembers = Array.from(eligibleMap.values());
         eligibleMembers.sort((a, b) => a.time - b.time);
@@ -476,7 +476,7 @@ const buyPackageDirectly = async (req, res) => {
 
         console.log(`Total Eligible Upline Users Found: ${finalEligibleMembers.length}`);
         console.log(`Eligible Users List:`, finalEligibleMembers.map(m => m.id));
-        console.log(`Each user will receive: $${singleLineIncomeAmount}`);
+        console.log(`Each user will receive: ₹${singleLineIncomeAmount}`);
         console.log(`============================================`);
 
         for (const member of finalEligibleMembers) {
@@ -486,7 +486,7 @@ const buyPackageDirectly = async (req, res) => {
             member_id: member.id,
             Name: member.name,
             mobileno: member.phone,
-            description: `Single Leg Income ($${requested_amount}) from ${finalTargetId}`,
+            description: `Single Leg Income (₹${requested_amount}) from ${finalTargetId}`,
             transaction_type: "Single Leg Income",
             ew_credit: earningsAmount.toString(),
             uw_credit: upgradeAmount.toString(),
@@ -495,7 +495,7 @@ const buyPackageDirectly = async (req, res) => {
             net_amount: singleLineIncomeAmount,
             gross_amount: singleLineIncomeAmount
           });
-          
+
           await sliTransaction.save();
 
           await MemberModel.findOneAndUpdate(
@@ -514,7 +514,7 @@ const buyPackageDirectly = async (req, res) => {
       const commissions = await mlmService.calculateCommissions(
         finalTargetId,
         targetMember.sponsor_id,
-        requested_amount, 
+        requested_amount,
         "Add-On"
       );
       if (commissions.length > 0) {

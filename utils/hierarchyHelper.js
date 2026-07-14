@@ -10,7 +10,7 @@ const addMemberHierarchy = async (memberData) => {
     try {
         // Fallback for introducer using sponsor fields if introducer is null
         const introducerId = memberData.introducer || memberData.sponsor_id || memberData.Sponsor_code;
-        
+
         if (!introducerId) {
             console.log("No introducer or sponsor specified for member");
             memberData.introducer_hierarchy = [];
@@ -24,40 +24,40 @@ const addMemberHierarchy = async (memberData) => {
         let introducerType = "MEMBER";
         let introducer = await MemberModel.findOne({ 
             $or: [
-                { member_id: memberData.introducer },
-                { Member_id: memberData.introducer }
-            ]
+    { member_id: memberData.introducer },
+    { Member_id: memberData.introducer }
+]
         });
 
-        if (!introducer) {
-            // Check if it's an agent
-            introducer = await AgentModel.findOne({ agent_id: memberData.introducer });
-            introducerType = "AGENT";
-        }
+if (!introducer) {
+    // Check if it's an agent
+    introducer = await AgentModel.findOne({ agent_id: memberData.introducer });
+    introducerType = "AGENT";
+}
 
-        if (!introducer) {
-            console.warn(`Introducer ${memberData.introducer} not found`);
-            memberData.introducer_hierarchy = [memberData.introducer];
-            return memberData;
-        }
+if (!introducer) {
+    console.warn(`Introducer ${memberData.introducer} not found`);
+    memberData.introducer_hierarchy = [memberData.introducer];
+    return memberData;
+}
 
-        // Build hierarchy
-        const hierarchy = await buildIntroducerHierarchy(introducerId, introducerType);
-        memberData.introducer_hierarchy = hierarchy;
+// Build hierarchy
+const hierarchy = await buildIntroducerHierarchy(introducerId, introducerType);
+memberData.introducer_hierarchy = hierarchy;
 
-        // Set introducer_name if not already set
-        if (!memberData.introducer_name && introducer.name) {
-            memberData.introducer_name = introducer.name;
-        }
+// Set introducer_name if not already set
+if (!memberData.introducer_name && introducer.name) {
+    memberData.introducer_name = introducer.name;
+}
 
-        console.log(`Built member hierarchy: ${hierarchy.length} levels`);
-        return memberData;
+console.log(`Built member hierarchy: ${hierarchy.length} levels`);
+return memberData;
     } catch (error) {
-        console.error("Error building member hierarchy:", error);
-        // Don't fail member creation, just log the error
-        memberData.introducer_hierarchy = memberData.introducer ? [memberData.introducer] : [];
-        return memberData;
-    }
+    console.error("Error building member hierarchy:", error);
+    // Don't fail member creation, just log the error
+    memberData.introducer_hierarchy = memberData.introducer ? [memberData.introducer] : [];
+    return memberData;
+}
 };
 
 /**
@@ -80,36 +80,36 @@ const addAgentHierarchy = async (agentData) => {
             // Could also be a member in some cases
             introducer = await MemberModel.findOne({ 
                 $or: [
-                    { member_id: agentData.introducer },
-                    { Member_id: agentData.introducer }
-                ]
+    { member_id: agentData.introducer },
+    { Member_id: agentData.introducer }
+]
             });
-            introducerType = "MEMBER";
+introducerType = "MEMBER";
         }
 
-        if (!introducer) {
-            console.warn(`Introducer ${agentData.introducer} not found`);
-            agentData.introducer_hierarchy = [agentData.introducer];
-            return agentData;
-        }
+if (!introducer) {
+    console.warn(`Introducer ${agentData.introducer} not found`);
+    agentData.introducer_hierarchy = [agentData.introducer];
+    return agentData;
+}
 
-        // Build hierarchy
-        const hierarchy = await buildIntroducerHierarchy(agentData.introducer, introducerType);
-        agentData.introducer_hierarchy = hierarchy;
+// Build hierarchy
+const hierarchy = await buildIntroducerHierarchy(agentData.introducer, introducerType);
+agentData.introducer_hierarchy = hierarchy;
 
-        // Set introducer_name if not already set
-        if (!agentData.introducer_name && introducer.name) {
-            agentData.introducer_name = introducer.name;
-        }
+// Set introducer_name if not already set
+if (!agentData.introducer_name && introducer.name) {
+    agentData.introducer_name = introducer.name;
+}
 
-        console.log(`Built agent hierarchy: ${hierarchy.length} levels`);
-        return agentData;
+console.log(`Built agent hierarchy: ${hierarchy.length} levels`);
+return agentData;
     } catch (error) {
-        console.error("Error building agent hierarchy:", error);
-        // Don't fail agent creation, just log the error
-        agentData.introducer_hierarchy = agentData.introducer ? [agentData.introducer] : [];
-        return agentData;
-    }
+    console.error("Error building agent hierarchy:", error);
+    // Don't fail agent creation, just log the error
+    agentData.introducer_hierarchy = agentData.introducer ? [agentData.introducer] : [];
+    return agentData;
+}
 };
 
 /**

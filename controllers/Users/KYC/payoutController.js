@@ -15,8 +15,8 @@ exports.initiatePayout = async (req, res) => {
 
     // Check if beneficiary is created
     if (member.beneficiaryStatus !== "CREATED" || !member.beneficiaryId) {
-      return res.status(400).json({ 
-        message: "Beneficiary not created for this member. Please complete KYC approval first." 
+      return res.status(400).json({
+        message: "Beneficiary not created for this member. Please complete KYC approval first."
       });
     }
 
@@ -45,7 +45,7 @@ exports.initiatePayout = async (req, res) => {
 
     // Extract token from response - handle both possible response structures
     const bearerToken = authResponse.data?.data?.token || authResponse.data?.token;
-    
+
     if (!bearerToken) {
       throw new Error(`Failed to extract authorization token from Cashfree. Response: ${JSON.stringify(authResponse.data)}`);
     }
@@ -76,7 +76,7 @@ exports.initiatePayout = async (req, res) => {
     });
   } catch (error) {
     console.error("Error initiating payout:", error.response?.data || error.message);
-    
+
     // Handle specific Cashfree errors
     if (error.response) {
       return res.status(error.response.status).json({
@@ -84,7 +84,7 @@ exports.initiatePayout = async (req, res) => {
         error: error.response.data
       });
     }
-    
+
     res.status(500).json({ message: "Internal server error" });
   }
 };

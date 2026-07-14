@@ -32,74 +32,74 @@ const populateMissingInfo = async () => {
         console.log('⏳ Checking transactions for missing names...');
         const transactions = await Transaction.find({
             $or: [
-                { Name: { $exists: false } },
-                { Name: "" },
-                { Name: null },
-                { mobileno: { $exists: false } },
-                { mobileno: "" },
-                { mobileno: null }
-            ]
+    { Name: { $exists: false } },
+    { Name: "" },
+    { Name: null },
+    { mobileno: { $exists: false } },
+    { mobileno: "" },
+    { mobileno: null }
+]
         });
 
-        console.log(`📊 Found ${transactions.length} transactions needing updates.`);
+console.log(`📊 Found ${transactions.length} transactions needing updates.`);
 
-        let txCount = 0;
-        for (const tx of transactions) {
-            const memberInfo = memberMap.get(tx.member_id);
-            if (memberInfo) {
-                await Transaction.updateOne(
-                    { _id: tx._id },
-                    { 
-                        $set: { 
-                            Name: memberInfo.name, 
-                            mobileno: memberInfo.mobile 
-                        } 
-                    }
-                );
-                txCount++;
+let txCount = 0;
+for (const tx of transactions) {
+    const memberInfo = memberMap.get(tx.member_id);
+    if (memberInfo) {
+        await Transaction.updateOne(
+            { _id: tx._id },
+            { 
+                        $set: {
+                    Name: memberInfo.name,
+                    mobileno: memberInfo.mobile
+                }
             }
-        }
-        console.log(`✅ Updated ${txCount} transactions.`);
-
-        // --- Update Payouts ---
-        console.log('⏳ Checking payouts for missing names...');
-        const payouts = await Payout.find({
-            $or: [
-                { Name: { $exists: false } },
-                { Name: "" },
-                { Name: null },
-                { mobileno: { $exists: false } },
-                { mobileno: "" },
-                { mobileno: null }
-            ]
-        });
-
-        console.log(`📊 Found ${payouts.length} payouts needing updates.`);
-
-        let pCount = 0;
-        for (const p of payouts) {
-            const memberInfo = memberMap.get(p.memberId || p.member_id);
-            if (memberInfo) {
-                await Payout.updateOne(
-                    { _id: p._id },
-                    { 
-                        $set: { 
-                            Name: memberInfo.name, 
-                            mobileno: memberInfo.mobile 
-                        } 
-                    }
-                );
-                pCount++;
-            }
-        }
-        console.log(`✅ Updated ${pCount} payouts.`);
-
-        console.log('🎉 Migration completed successfully!');
-        process.exit(0);
-    } catch (error) {
-        console.error(`❌ Migration failed: ${error.message}`);
-        process.exit(1);
+        );
+        txCount++;
     }
+}
+console.log(`✅ Updated ${txCount} transactions.`);
+
+// --- Update Payouts ---
+console.log('⏳ Checking payouts for missing names...');
+const payouts = await Payout.find({
+            $or: [
+    { Name: { $exists: false } },
+    { Name: "" },
+    { Name: null },
+    { mobileno: { $exists: false } },
+    { mobileno: "" },
+    { mobileno: null }
+]
+        });
+
+console.log(`📊 Found ${payouts.length} payouts needing updates.`);
+
+let pCount = 0;
+for (const p of payouts) {
+    const memberInfo = memberMap.get(p.memberId || p.member_id);
+    if (memberInfo) {
+        await Payout.updateOne(
+            { _id: p._id },
+            { 
+                        $set: {
+                    Name: memberInfo.name,
+                    mobileno: memberInfo.mobile
+                }
+            }
+        );
+        pCount++;
+    }
+}
+console.log(`✅ Updated ${pCount} payouts.`);
+
+console.log('🎉 Migration completed successfully!');
+process.exit(0);
+    } catch (error) {
+    console.error(`❌ Migration failed: ${error.message}`);
+    process.exit(1);
+}
 };
 
 populateMissingInfo();

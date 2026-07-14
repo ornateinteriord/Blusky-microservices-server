@@ -417,134 +417,134 @@ exports.handleCashfreeWebhook = async (req, res) => {
             },
             {
                 $set: {
-                    webhook_processed: true,
-                    webhook_processed_at: new Date()
-                }
-            },
-            { new: true }
+            webhook_processed: true,
+                webhook_processed_at: new Date()
+        }
+    },
+    { new: true }
         );
 
-        if (!transaction) {
-            console.log("⚠️ Duplicate or missing transaction:", orderId);
+    if (!transaction) {
+        console.log("⚠️ Duplicate or missing transaction:", orderId);
+        return res.status(200).json({ received: true });
+    }
+
+    console.log("✅ Transaction found:", {
+        transaction_id: transaction.transaction_id,
+        member_id: transaction.member_id,
+        expected_amount: transaction.credit
+    });
+
+    // -------------------------
+    // ✅ PAYMENT SUCCESS
+    // -------------------------
+    if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
+        // Additional check: Skip if already completed (race condition protection)
+        if (transaction.status === "Completed") {
+            console.log("⚠️ Transaction already completed, skipping duplicate processing");
+            return res.status(200).json({ received: true, message: "Already processed" });
+        }
+
+        console.log("💰 Processing successful payment");
+
+        const paymentData = webhookData.data.payment;
+        const receivedAmount = parseFloat(paymentData.payment_amount);
+        const expectedAmount = parseFloat(transaction.credit);
+
+        console.log("💰 Amount verification:", {
+            received: receivedAmount,
+            expected: expectedAmount
+        });
+
+        if (Math.abs(receivedAmount - expectedAmount) > 0.01) {
+            console.error("❌ Amount mismatch");
+            transaction.status = "Failed";
+            transaction.payment_status = "Failed";
+            transaction.description = `Amount mismatch: received ₹${receivedAmount}, expected ₹${expectedAmount}`;
+            await transaction.save();
             return res.status(200).json({ received: true });
         }
 
-        console.log("✅ Transaction found:", {
-            transaction_id: transaction.transaction_id,
+        // Update account balance
+        const account = await AccountsModel.findOne({
             member_id: transaction.member_id,
-            expected_amount: transaction.credit
+            account_no: transaction.account_number,
+            account_type: transaction.account_type,
+            status: "active"
         });
 
-        // -------------------------
-        // ✅ PAYMENT SUCCESS
-        // -------------------------
-        if (eventType === "PAYMENT_SUCCESS_WEBHOOK") {
-            // Additional check: Skip if already completed (race condition protection)
-            if (transaction.status === "Completed") {
-                console.log("⚠️ Transaction already completed, skipping duplicate processing");
-                return res.status(200).json({ received: true, message: "Already processed" });
-            }
-
-            console.log("💰 Processing successful payment");
-
-            const paymentData = webhookData.data.payment;
-            const receivedAmount = parseFloat(paymentData.payment_amount);
-            const expectedAmount = parseFloat(transaction.credit);
-
-            console.log("💰 Amount verification:", {
-                received: receivedAmount,
-                expected: expectedAmount
-            });
-
-            if (Math.abs(receivedAmount - expectedAmount) > 0.01) {
-                console.error("❌ Amount mismatch");
-                transaction.status = "Failed";
-                transaction.payment_status = "Failed";
-                transaction.description = `Amount mismatch: received $${receivedAmount}, expected $${expectedAmount}`;
-                await transaction.save();
-                return res.status(200).json({ received: true });
-            }
-
-            // Update account balance
-            const account = await AccountsModel.findOne({
-                member_id: transaction.member_id,
-                account_no: transaction.account_number,
-                account_type: transaction.account_type,
-                status: "active"
-            });
-
-            if (account) {
-                account.account_amount += transaction.credit;
-                await account.save();
-                transaction.balance = account.account_amount;
-                console.log("✅ Account balance updated:", account.account_amount);
-            } else {
-                console.warn("⚠️ Account not found for balance update");
-            }
-
-            transaction.status = "Completed";
-            transaction.payment_status = "Success";
-            transaction.payment_completed_at = new Date();
-            transaction.payment_data = webhookData.data;
-            transaction.description = `Online Top-up to Account ${transaction.account_number} (Success)`;
-
-            await transaction.save();
-
-            console.log("✅ Payment completed & balance updated");
-
-            // Process commission for introducers
-            try {
-                console.log("💰 Processing commission for transaction...");
-                const commissionResult = await processTransactionCommission(transaction);
-                console.log("💰 Commission processing result:", commissionResult);
-            } catch (commissionError) {
-                console.error("❌ Commission processing error:", commissionError.message);
-                // Don't fail the webhook if commission fails
-            }
+        if (account) {
+            account.account_amount += transaction.credit;
+            await account.save();
+            transaction.balance = account.account_amount;
+            console.log("✅ Account balance updated:", account.account_amount);
+        } else {
+            console.warn("⚠️ Account not found for balance update");
         }
 
-        // -------------------------
-        // ❌ PAYMENT FAILED
-        // -------------------------
-        else if (eventType === "PAYMENT_FAILED_WEBHOOK") {
-            console.log("❌ Payment failed");
+        transaction.status = "Completed";
+        transaction.payment_status = "Success";
+        transaction.payment_completed_at = new Date();
+        transaction.payment_data = webhookData.data;
+        transaction.description = `Online Top-up to Account ${transaction.account_number} (Success)`;
 
-            transaction.status = "Failed";
-            transaction.payment_status = "Failed";
-            transaction.payment_failed_at = new Date();
-            transaction.payment_data = webhookData.data;
+        await transaction.save();
 
-            await transaction.save();
+        console.log("✅ Payment completed & balance updated");
+
+        // Process commission for introducers
+        try {
+            console.log("💰 Processing commission for transaction...");
+            const commissionResult = await processTransactionCommission(transaction);
+            console.log("💰 Commission processing result:", commissionResult);
+        } catch (commissionError) {
+            console.error("❌ Commission processing error:", commissionError.message);
+            // Don't fail the webhook if commission fails
         }
-
-        // -------------------------
-        // ℹ️ OTHER EVENTS
-        // -------------------------
-        else {
-            console.log("ℹ️ Ignored webhook type:", eventType);
-        }
-
-        console.log("✅ Webhook processing completed successfully");
-        return res.status(200).json({
-            success: true,
-            received: true,
-            order_id: orderId,
-            status: transaction?.payment_status || "processed"
-        });
-
-    } catch (error) {
-        console.error("❌ WEBHOOK ERROR:", error.message);
-        console.error(error.stack);
-
-        // ⚠️ Always return 200 so Cashfree doesn't spam retries
-        return res.status(200).json({
-            received: true,
-            error: error.message
-        });
-
-    } finally {
-        console.log(`🔚 WEBHOOK DONE (${Date.now() - start}ms)\n`);
     }
+
+    // -------------------------
+    // ❌ PAYMENT FAILED
+    // -------------------------
+    else if (eventType === "PAYMENT_FAILED_WEBHOOK") {
+        console.log("❌ Payment failed");
+
+        transaction.status = "Failed";
+        transaction.payment_status = "Failed";
+        transaction.payment_failed_at = new Date();
+        transaction.payment_data = webhookData.data;
+
+        await transaction.save();
+    }
+
+    // -------------------------
+    // ℹ️ OTHER EVENTS
+    // -------------------------
+    else {
+        console.log("ℹ️ Ignored webhook type:", eventType);
+    }
+
+    console.log("✅ Webhook processing completed successfully");
+    return res.status(200).json({
+        success: true,
+        received: true,
+        order_id: orderId,
+        status: transaction?.payment_status || "processed"
+    });
+
+} catch (error) {
+    console.error("❌ WEBHOOK ERROR:", error.message);
+    console.error(error.stack);
+
+    // ⚠️ Always return 200 so Cashfree doesn't spam retries
+    return res.status(200).json({
+        received: true,
+        error: error.message
+    });
+
+} finally {
+    console.log(`🔚 WEBHOOK DONE (${Date.now() - start}ms)\n`);
+}
 };
 
 
@@ -606,7 +606,7 @@ exports.checkPaymentStatus = async (req, res) => {
                         // Set transaction balance to the account's new balance
                         transaction.balance = newAccountBalance;
 
-                        console.log(`[Status Check] Account ${account.account_no} credited with $${transaction.credit}. New balance: $${newAccountBalance}`);
+                        console.log(`[Status Check] Account ${account.account_no} credited with ₹${transaction.credit}. New balance: ₹${newAccountBalance}`);
                     } else {
                         console.error(`[Status Check] Account not found for transaction ${orderId}`);
                         transaction.description += " (Warning: Account not found for balance update)";
@@ -707,16 +707,16 @@ exports.transferMoney = async (req, res) => {
             (acc.account_no == from.account_no) &&
             (acc.account_type === from.account_type)
         );
-        
+
         if (!senderAccount) {
             console.log("❌ Sender account NOT found. Criteria:", from);
             if (allAccounts.length > 0) {
-                 const matchByNo = allAccounts.filter(a => a.account_no === from.account_no);
-                 console.log(`Found ${matchByNo.length} accounts matching account_no ${from.account_no}`);
-                 if (matchByNo.length > 0) {
-                     console.log("Sample account member_id in DB:", matchByNo[0].member_id);
-                     console.log("Comparison result for member_id:", matchByNo[0].member_id === from.member_id);
-                 }
+                const matchByNo = allAccounts.filter(a => a.account_no === from.account_no);
+                console.log(`Found ${matchByNo.length} accounts matching account_no ${from.account_no}`);
+                if (matchByNo.length > 0) {
+                    console.log("Sample account member_id in DB:", matchByNo[0].member_id);
+                    console.log("Comparison result for member_id:", matchByNo[0].member_id === from.member_id);
+                }
             }
             return res.status(400).json({
                 success: false,
@@ -778,7 +778,7 @@ exports.transferMoney = async (req, res) => {
 
             return res.status(400).json({
                 success: false,
-                message: `Insufficient balance. Available: $${senderAccount.account_amount}, Required: $${amount}`
+                message: `Insufficient balance. Available: ₹${senderAccount.account_amount}, Required: ₹${amount}`
             });
         }
 
@@ -961,14 +961,14 @@ exports.requestWithdraw = async (req, res) => {
         if (account.account_amount < amount) {
             return res.status(400).json({
                 success: false,
-                message: `Insufficient balance. Available: $${account.account_amount}, Required: $${amount}`
+                message: `Insufficient balance. Available: ₹${account.account_amount}, Required: ₹${amount}`
             });
         }
 
         console.log("💸 Processing instant withdrawal...");
         console.log(`   Member: ${member.name} (${member.member_id})`);
         console.log(`   Beneficiary ID: ${member.beneficiaryId}`);
-        console.log(`   Amount: $${amount}`);
+        console.log(`   Amount: ₹${amount}`);
 
         // Generate unique IDs
         const withdrawRequestId = `WR-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
@@ -1051,7 +1051,7 @@ exports.requestWithdraw = async (req, res) => {
         const originalBalance = account.account_amount;
         account.account_amount -= amount;
         await account.save();
-        console.log(`✅ Balance deducted: $${amount}. New balance: $${account.account_amount}`);
+        console.log(`✅ Balance deducted: ₹${amount}. New balance: ₹${account.account_amount}`);
 
         // Generate transaction ID (MUST await!)
         const transactionId = await generateTransactionId();
@@ -1130,7 +1130,7 @@ exports.requestWithdraw = async (req, res) => {
                     console.log("⚠️ Rolling back balance deduction...");
                     freshAccount.account_amount += amount;
                     await freshAccount.save();
-                    console.log(`✅ Balance rolled back to: $${freshAccount.account_amount}`);
+                    console.log(`✅ Balance rolled back to: ₹${freshAccount.account_amount}`);
                 }
             }
         } catch (rollbackError) {

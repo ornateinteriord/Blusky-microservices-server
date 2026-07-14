@@ -222,7 +222,7 @@ exports.createOrder = async (req, res) => {
       if (amount > currentDueAmount) {
         return res.status(400).json({
           success: false,
-          message: `Cannot repay more than due amount $${currentDueAmount}`
+          message: `Cannot repay more than due amount ₹${currentDueAmount}`
         });
       }
 
@@ -318,7 +318,7 @@ exports.createOrder = async (req, res) => {
       transaction_id: response.data.order_id,
       transaction_date: new Date(),
       member_id: memberId,
-      description: `Loan repayment of $${amount}`,
+      description: `Loan repayment of ₹${amount}`,
       status: "Pending",
       is_loan_repayment: isLoanRepayment,
       ew_debit: amount,
@@ -712,7 +712,7 @@ exports.handleWebhook = async (req, res) => {
         });
         // Log this for investigation but don't process
         paymentTransaction.status = "Failed";
-        paymentTransaction.description = `Amount mismatch: received $${receivedAmount}, expected $${expectedAmount}`;
+        paymentTransaction.description = `Amount mismatch: received ₹${receivedAmount}, expected ₹${expectedAmount}`;
         paymentTransaction.webhook_processed = true;
         paymentTransaction.webhook_processed_at = new Date();
         await paymentTransaction.save();
@@ -804,7 +804,7 @@ exports.handleWebhook = async (req, res) => {
             console.log(`✅ Member ${member.Member_id} status updated from Pending to active`);
             if (packageUpdated) {
               console.log(`📦 Member package updated to ${member.spackage} (${member.package_value})`);
-              
+
               // --- NEW: Global Income (Autopool) Distribution ---
               try {
                 const { distributeGlobalIncome } = require("../Packages/globalIncomeService");

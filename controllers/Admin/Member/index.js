@@ -254,49 +254,49 @@ const updateMember = async (req, res) => {
             $or: queryConditions
         });
 
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: `Member not found with ID: ${memberId}`
-            });
-        }
+if (!member) {
+    return res.status(404).json({
+        success: false,
+        message: `Member not found with ID: ${memberId}`
+    });
+}
 
-        // If updating contactno, check if it already exists for another member
-        if (updateData.contactno && updateData.contactno !== member.contactno) {
-            const existingContact = await MemberModel.findOne({
-                contactno: updateData.contactno,
-                _id: { $ne: member._id }  // Use _id instead of member_id for uniqueness
-            });
-            if (existingContact) {
-                return res.status(400).json({
-                    success: false,
-                    message: "Contact number already exists for another member"
-                });
-            }
-        }
-
-        // Update using _id to avoid type issues
-        const updatedMember = await MemberModel.findByIdAndUpdate(
-            member._id,
-            { $set: updateData },
-            { new: true, runValidators: true }
-        );
-
-
-
-        res.status(200).json({
-            success: true,
-            message: "Member updated successfully",
-            data: updatedMember
-        });
-    } catch (error) {
-        console.error('[ERROR] Failed to update member:', error);
-        res.status(500).json({
+// If updating contactno, check if it already exists for another member
+if (updateData.contactno && updateData.contactno !== member.contactno) {
+    const existingContact = await MemberModel.findOne({
+        contactno: updateData.contactno,
+        _id: { $ne: member._id }  // Use _id instead of member_id for uniqueness
+    });
+    if (existingContact) {
+        return res.status(400).json({
             success: false,
-            message: "Failed to update member",
-            error: error.message
+            message: "Contact number already exists for another member"
         });
     }
+}
+
+// Update using _id to avoid type issues
+const updatedMember = await MemberModel.findByIdAndUpdate(
+    member._id,
+    { $set: updateData },
+    { new: true, runValidators: true }
+);
+
+
+
+res.status(200).json({
+    success: true,
+    message: "Member updated successfully",
+    data: updatedMember
+});
+    } catch (error) {
+    console.error('[ERROR] Failed to update member:', error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to update member",
+        error: error.message
+    });
+}
 };
 
 // Get a single member by ID
@@ -324,26 +324,26 @@ const getMemberById = async (req, res) => {
             $or: queryConditions
         });
 
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: "Member not found"
-            });
-        }
+if (!member) {
+    return res.status(404).json({
+        success: false,
+        message: "Member not found"
+    });
+}
 
-        res.status(200).json({
-            success: true,
-            message: "Member fetched successfully",
-            data: member
-        });
+res.status(200).json({
+    success: true,
+    message: "Member fetched successfully",
+    data: member
+});
     } catch (error) {
-        console.error('[ERROR] Failed to fetch member:', error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch member",
-            error: error.message
-        });
-    }
+    console.error('[ERROR] Failed to fetch member:', error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch member",
+        error: error.message
+    });
+}
 };
 
 // Set introducer hierarchy for a member
@@ -355,79 +355,79 @@ const setIntroducerHierarchy = async (req, res) => {
         // Find the member
         const member = await MemberModel.findOne({
             $or: [
-                { member_id: memberId },
-            { Member_id: memberId },
-                { member_id: parseInt(memberId) }
-            ]
+    { member_id: memberId },
+    { Member_id: memberId },
+    { member_id: parseInt(memberId) }
+]
         });
 
-        if (!member) {
-            return res.status(404).json({
-                success: false,
-                message: "Member not found"
-            });
-        }
+if (!member) {
+    return res.status(404).json({
+        success: false,
+        message: "Member not found"
+    });
+}
 
-        // If no introducer_id provided, use the member's existing introducer
-        const introducerId = introducer_id || member.introducer;
+// If no introducer_id provided, use the member's existing introducer
+const introducerId = introducer_id || member.introducer;
 
-        if (!introducerId) {
-            return res.status(400).json({
-                success: false,
-                message: "No introducer specified"
-            });
-        }
+if (!introducerId) {
+    return res.status(400).json({
+        success: false,
+        message: "No introducer specified"
+    });
+}
 
-        // Find the introducer
-        const introducer = await MemberModel.findOne({
+// Find the introducer
+const introducer = await MemberModel.findOne({
             $or: [
-                { member_id: introducerId },
-                { member_id: parseInt(introducerId) }
-            ]
+    { member_id: introducerId },
+    { member_id: parseInt(introducerId) }
+]
         });
 
-        if (!introducer) {
-            return res.status(404).json({
-                success: false,
-                message: "Introducer not found"
-            });
-        }
+if (!introducer) {
+    return res.status(404).json({
+        success: false,
+        message: "Introducer not found"
+    });
+}
 
-        // Build the hierarchy: [direct introducer, ...introducer's hierarchy]
-        const newHierarchy = [introducerId];
+// Build the hierarchy: [direct introducer, ...introducer's hierarchy]
+const newHierarchy = [introducerId];
 
-        if (introducer.introducer_hierarchy && introducer.introducer_hierarchy.length > 0) {
-            // Add introducer's hierarchy (max 6 more levels for total of 7)
-            const existingHierarchy = introducer.introducer_hierarchy.slice(0, 6);
-            newHierarchy.push(...existingHierarchy);
-        }
+if (introducer.introducer_hierarchy && introducer.introducer_hierarchy.length > 0) {
+    // Add introducer's hierarchy (max 6 more levels for total of 7)
+    const existingHierarchy = introducer.introducer_hierarchy.slice(0, 6);
+    newHierarchy.push(...existingHierarchy);
+}
 
-        // Update member
-        member.introducer = introducerId;
-        member.introducer_hierarchy = newHierarchy;
-        await member.save();
+// Update member
+member.introducer = introducerId;
+member.introducer_hierarchy = newHierarchy;
+await member.save();
 
-        console.log(`✅ Updated introducer hierarchy for member ${memberId}:`);
-        console.log(`   Introducer: ${introducerId}`);
-        console.log(`   Hierarchy:`, newHierarchy);
+console.log(`✅ Updated introducer hierarchy for member ${memberId}:`);
+console.log(`   Introducer: ${introducerId}`);
+console.log(`   Hierarchy:`, newHierarchy);
 
-        res.status(200).json({
-            success: true,
-            message: "Introducer hierarchy updated successfully",
-            data: {
-                member_id: member.member_id,
-                introducer: introducerId,
-                introducer_hierarchy: newHierarchy
-            }
-        });
-    } catch (error) {
-        console.error("Error setting introducer hierarchy:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to set introducer hierarchy",
-            error: error.message
-        });
+res.status(200).json({
+    success: true,
+    message: "Introducer hierarchy updated successfully",
+    data: {
+        member_id: member.member_id,
+        introducer: introducerId,
+        introducer_hierarchy: newHierarchy
     }
+});
+    } catch (error) {
+    console.error("Error setting introducer hierarchy:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to set introducer hierarchy",
+        error: error.message
+    });
+}
 };
 
 module.exports = {

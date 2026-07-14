@@ -11,8 +11,8 @@ const { updateSponsorReferrals } = require("../../controllers/Users/mlmService/m
 const { addMemberHierarchy } = require("../../utils/hierarchyHelper");
 const path = require("path");
 
-const recoverySubject = "UWC+ - Password Recovery";
-const resetPasswordSubject = "UWC+ - OTP Verification";
+const recoverySubject = "BMS - Password Recovery";
+const resetPasswordSubject = "BMS - OTP Verification";
 
 const generateUniqueMemberId = async () => {
   let newNumber = 53553301;
@@ -59,7 +59,7 @@ const signup = async (req, res) => {
 
     let memberData = {
       Member_id: memberId,
-      qr_code: `UWC-P2P:${memberId}`,
+      qr_code: `BMS-P2P:${memberId}`,
       email,
       password,
       Name,
@@ -68,7 +68,7 @@ const signup = async (req, res) => {
       sponsor_id: sponsorId || null,
       Sponsor_code: sponsorId || null,
       Sponsor_name: sponsor ? sponsor.Name : null,
-      
+
       introducer: sponsorId || null,
       introducer_name: sponsor ? sponsor.Name : null,
 
@@ -95,11 +95,11 @@ const signup = async (req, res) => {
 
       const { welcomeMessage, welcomeSubject } = generateMSCSEmail(memberId, password, Name);
 
-      const textContent = `Dear ${Name}, Your account registration with UWC+ has been completed. Member ID: ${memberId}, Password: ${password}. Your account is under verification process.`;
+      const textContent = `Dear ${Name}, Your account registration with BMS has been completed. Member ID: ${memberId}, Password: ${password}. Your account is under verification process.`;
 
       const attachments = [{
-        filename: 'USDT.png',
-        path: path.join(__dirname, '../../utils/USDT.png'),
+        filename: 'BMS.png',
+        path: path.join(__dirname, '../../utils/BMS.png'),
         cid: 'bmslogo'
       }];
 
@@ -148,7 +148,7 @@ const getSponsorDetails = async (req, res) => {
 const resetPassword = async (req, res) => {
   try {
     const { mobileno, password, otp } = req.body;
-    
+
     if (!mobileno || !password || !otp) {
       return res.status(400).json({ success: false, message: "Missing required fields" });
     }
@@ -172,15 +172,15 @@ const resetPassword = async (req, res) => {
       // Verify Firebase token
       const decodedToken = await admin.auth().verifyIdToken(otp);
       const phoneVerified = decodedToken.phone_number;
-      
+
       let memberPhone = String(user.mobileno).trim().replace(/\s+/g, '');
       if (!memberPhone.startsWith('+')) {
         memberPhone = '+91' + memberPhone;
       }
-      
+
       // Also format the phoneVerified to remove +91 for comparison if needed
       let formattedVerifiedPhone = phoneVerified;
-      
+
       if (formattedVerifiedPhone !== memberPhone) {
         return res.status(400).json({ success: false, message: "Phone number mismatch. Please use your registered mobile number." });
       }

@@ -39,58 +39,58 @@ const getDashboardCounts = async (req, res) => {
         const accountsByType = await AccountsModel.aggregate([
             {
                 $group: {
-                    _id: "$account_type",
-                    count: { $sum: 1 }
-                }
+    _id: "$account_type",
+        count: { $sum: 1 }
+}
             },
-            {
+{
                 $lookup: {
-                    from: "account_group_tbl",
-                    localField: "_id",
-                    foreignField: "account_group_id",
+        from: "account_group_tbl",
+            localField: "_id",
+                foreignField: "account_group_id",
                     as: "groupInfo"
-                }
-            },
-            {
+    }
+},
+{
                 $unwind: {
-                    path: "$groupInfo",
-                    preserveNullAndEmptyArrays: true
-                }
-            },
-            {
+        path: "$groupInfo",
+            preserveNullAndEmptyArrays: true
+    }
+},
+{
                 $project: {
-                    _id: 0,
-                    account_type: "$_id",
-                    account_group_name: "$groupInfo.account_group_name",
+        _id: 0,
+            account_type: "₹_id",
+                account_group_name: "$groupInfo.account_group_name",
                     count: 1
-                }
-            },
-            {
+    }
+},
+{
                 $sort: { account_type: 1 }
-            }
+}
         ]);
 
-        res.status(200).json({
-            success: true,
-            message: "Dashboard counts fetched successfully",
-            data: {
-                totalMembers,
-                totalAccounts,
-                totalAgents,
-                closingBalance,
-                totalDebit,
-                totalCredit,
-                accountsByType
-            }
-        });
-    } catch (error) {
-        console.error("Error fetching dashboard counts:", error);
-        res.status(500).json({
-            success: false,
-            message: "Failed to fetch dashboard counts",
-            error: error.message
-        });
+res.status(200).json({
+    success: true,
+    message: "Dashboard counts fetched successfully",
+    data: {
+        totalMembers,
+        totalAccounts,
+        totalAgents,
+        closingBalance,
+        totalDebit,
+        totalCredit,
+        accountsByType
     }
+});
+    } catch (error) {
+    console.error("Error fetching dashboard counts:", error);
+    res.status(500).json({
+        success: false,
+        message: "Failed to fetch dashboard counts",
+        error: error.message
+    });
+}
 };
 
 // Get recent accounts and members

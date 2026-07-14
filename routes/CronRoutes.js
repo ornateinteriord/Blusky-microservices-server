@@ -14,14 +14,14 @@ router.get("/roi", async (req, res) => {
     const cronSecret = process.env.CRON_SECRET;
 
     console.log(`⏰ [CRON] [${new Date().toISOString()}] ROI Trigger received.`);
-    
+
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
         console.warn("⚠️ [CRON] Unauthorized ROI trigger attempt. Check Vercel CRON_SECRET environment variable.");
         return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     console.log("🚀 [CRON] Vercel Trigger: Starting Daily ROI Distribution...");
-    
+
     const startTime = Date.now();
     try {
         const roiResult = await processDailyROI();
@@ -39,9 +39,9 @@ router.get("/roi", async (req, res) => {
 
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
-        return res.status(200).json({ 
-            success: true, 
-            message: "ROI & Auto-Upgrade processing completed", 
+        return res.status(200).json({
+            success: true,
+            message: "ROI & Auto-Upgrade processing completed",
             duration: `${duration}s`,
             data: {
                 roi: roiResult,
@@ -51,12 +51,12 @@ router.get("/roi", async (req, res) => {
     } catch (error) {
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
         console.error(`❌ [CRON] Vercel ROI Error after ${duration}s:`, error.message);
-        
-        return res.status(500).json({ 
-            success: false, 
-            message: "Internal Server Error", 
-            duration: `${duration}s`, 
-            error: error.message 
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            duration: `${duration}s`,
+            error: error.message
         });
     }
 });
@@ -71,36 +71,36 @@ router.get("/auto-upgrade", async (req, res) => {
     const cronSecret = process.env.CRON_SECRET;
 
     console.log(`⏰ [CRON] [${new Date().toISOString()}] Auto-Upgrade Trigger received.`);
-    
+
     if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
         console.warn("⚠️ [CRON] Unauthorized Auto-Upgrade trigger attempt.");
         return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
     console.log("🚀 [CRON] Vercel Trigger: Starting Auto Upgrade Wallet Process...");
-    
+
     const startTime = Date.now();
     try {
         const result = await processAutoUpgrades();
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
 
         console.log(`✅ [CRON] Vercel Auto-Upgrade completed in ${duration}s:`, result);
-        
-        return res.status(200).json({ 
-            success: true, 
-            message: "Auto-Upgrade processing completed", 
+
+        return res.status(200).json({
+            success: true,
+            message: "Auto-Upgrade processing completed",
             duration: `${duration}s`,
-            data: result 
+            data: result
         });
     } catch (error) {
         const duration = ((Date.now() - startTime) / 1000).toFixed(2);
         console.error(`❌ [CRON] Vercel Auto-Upgrade Error after ${duration}s:`, error.message);
-        
-        return res.status(500).json({ 
-            success: false, 
-            message: "Internal Server Error", 
-            duration: `${duration}s`, 
-            error: error.message 
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error",
+            duration: `${duration}s`,
+            error: error.message
         });
     }
 });

@@ -1,16 +1,16 @@
 const generateMSCSEmail = (memberId, password, name = 'Member') => {
-  const welcomeSubject = 'USDT - Account Registration Successful';
+  const welcomeSubject = 'BMS - Account Registration Successful';
 
   const welcomeMessage = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
       <!-- Logo Header -->
       <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="UWC+ Logo" style="max-width: 120px; height: auto;" />
+        <img src="cid:bmslogo" alt="BMS Logo" style="max-width: 120px; height: auto;" />
       </div>
       
       <!-- Content -->
       <div style="background-color: #1f2937; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);">
-        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Welcome to UWC+!</h2>
+        <h2 style="color: #ffffff; margin-top: 0; text-align: center; font-size: 24px;">Welcome to BMS!</h2>
         
         <p style="color: #d1d5db; font-size: 16px; line-height: 1.6; margin-bottom: 20px;">
           Dear <strong style="color: #fbbf24;">${name}</strong>,
@@ -34,7 +34,7 @@ const generateMSCSEmail = (memberId, password, name = 'Member') => {
 
       <!-- Footer -->
       <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} UWC+. All rights reserved.
+        &copy; ${new Date().getFullYear()} BMS. All rights reserved.
       </div>
     </div>
   `;
@@ -43,13 +43,13 @@ const generateMSCSEmail = (memberId, password, name = 'Member') => {
 };
 
 const generateTopUpApprovedEmail = (name, amount) => {
-  const subject = 'UWC+ - Fund Load Approved';
+  const subject = 'BMS - Fund Load Approved';
 
   const htmlContent = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #111827; border-radius: 12px; border: 1px solid #374151;">
       <!-- Logo Header -->
       <div style="text-align: center; margin-bottom: 0px;">
-        <img src="cid:bmslogo" alt="UWC+ Logo" style="max-width: 120px; height: auto;" />
+        <img src="cid:bmslogo" alt="BMS Logo" style="max-width: 120px; height: auto;" />
       </div>
       
       <!-- Content -->
@@ -67,7 +67,7 @@ const generateTopUpApprovedEmail = (name, amount) => {
         <div style="background-color: #374151; border-left: 4px solid #10b981; padding: 20px; margin: 25px 0; border-radius: 4px;">
           <h3 style="color: #10b981; margin-top: 0; margin-bottom: 15px; font-size: 18px;">Transaction Details</h3>
           <p style="margin: 8px 0; color: #d1d5db; font-size: 15px;"><strong>Status:</strong> <span style="color: #ffffff;">Approved</span></p>
-          <p style="margin: 8px 0; color: #d1d5db; font-size: 15px;"><strong>Credited Amount:</strong> <span style="color: #ffffff;">$${amount}</span></p>
+          <p style="margin: 8px 0; color: #d1d5db; font-size: 15px;"><strong>Credited Amount:</strong> <span style="color: #ffffff;">₹${amount}</span></p>
         </div>
 
         <p style="color: #9ca3af; font-size: 14px; line-height: 1.6; margin-bottom: 20px;">
@@ -77,7 +77,7 @@ const generateTopUpApprovedEmail = (name, amount) => {
 
       <!-- Footer -->
       <div style="text-align: center; margin-top: 25px; color: #9ca3af; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} UWC+. All rights reserved.
+        &copy; ${new Date().getFullYear()} BMS. All rights reserved.
       </div>
     </div>
   `;

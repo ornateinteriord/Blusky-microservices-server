@@ -322,8 +322,8 @@ router.get('/check-m1', async (req, res) => {
             m1_time: m1.createdAt,
             m2_time: m2.createdAt
         });
-    } catch(e) {
-        res.status(500).json({e: e.message});
+    } catch (e) {
+        res.status(500).json({ e: e.message });
     }
 });
 

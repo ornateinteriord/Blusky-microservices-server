@@ -66,7 +66,7 @@ const io = new Server(server, {
         "https://www.BMSworld.club",
         "https://BMSworld.club",
         "https://BMS-worl-club.vercel.app",
-        "https://blusky-microservices-ui.vercel.app/"
+        "https://blusky-microservices-ui.vercel.app"
       ].filter(Boolean);
 
       if (isLocalhost || isNgrok || socketAllowedOrigins.includes(origin)) {
@@ -127,7 +127,7 @@ const allowedOrigins = [
   "https://BMS-worl-club.vercel.app",
   "https://www.BMSworld.club",
   "https://BMSworld.club",
-  "https://blusky-microservices-ui.vercel.app/"
+  "https://blusky-microservices-ui.vercel.app"
 ].filter(Boolean);
 
 app.use(

@@ -66,7 +66,8 @@ const io = new Server(server, {
         "https://www.BMSworld.club",
         "https://BMSworld.club",
         "https://BMS-worl-club.vercel.app",
-        "https://blusky-microservices-ui.vercel.app"
+        "https://blusky-microservices-ui.vercel.app",
+        "https://www.bluskymicroservices.com"
       ].filter(Boolean);
 
       if (isLocalhost || isNgrok || socketAllowedOrigins.includes(origin)) {
@@ -127,7 +128,8 @@ const allowedOrigins = [
   "https://BMS-worl-club.vercel.app",
   "https://www.BMSworld.club",
   "https://BMSworld.club",
-  "https://blusky-microservices-ui.vercel.app"
+  "https://blusky-microservices-ui.vercel.app",
+  "https://www.bluskymicroservices.com"
 ].filter(Boolean);
 
 app.use(
@@ -154,7 +156,7 @@ app.use(
 app.options("*", cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-   const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
+    const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
     const isNgrok = origin.endsWith("ngrok-free.dev");
     if (isLocalhost || isNgrok || allowedOrigins.includes(origin)) {
       return callback(null, true);

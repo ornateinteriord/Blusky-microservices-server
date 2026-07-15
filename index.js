@@ -59,7 +59,7 @@ const io = new Server(server, {
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // Postman / server-to-server
 
-      const isLocalhost = /^http:\/\/localhost:\d+₹/.test(origin);
+      const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
       const isNgrok = origin?.endsWith("ngrok-free.dev");
       const socketAllowedOrigins = [
         process.env.FRONTEND_URL,
@@ -135,7 +135,7 @@ app.use(
     origin: (origin, callback) => {
       if (!origin) return callback(null, true); // Postman / server-to-server
 
-      const isLocalhost = /^http:\/\/localhost:\d+₹/.test(origin);
+      const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
       const isNgrok = origin.endsWith("ngrok-free.dev");
 
       if (isLocalhost || isNgrok || allowedOrigins.includes(origin)) {
@@ -154,7 +154,7 @@ app.use(
 app.options("*", cors({
   origin: (origin, callback) => {
     if (!origin) return callback(null, true);
-    const isLocalhost = /^http:\/\/localhost:\d+₹/.test(origin);
+   const isLocalhost = /^http:\/\/localhost:\d+$/.test(origin);
     const isNgrok = origin.endsWith("ngrok-free.dev");
     if (isLocalhost || isNgrok || allowedOrigins.includes(origin)) {
       return callback(null, true);

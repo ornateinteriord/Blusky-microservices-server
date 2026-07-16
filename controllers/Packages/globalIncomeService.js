@@ -3,8 +3,8 @@ const MemberModel = require("../../models/Users/Member");
 const TransactionModel = require("../../models/Transaction/Transaction");
 
 /**
- * Handles adding a member to the Global Income queue and distributing 12% payouts
- * to the previous members in the queue based on the intervals: 150th, 300th, 450th, 600th, 750th.
+ * Handles adding a member to the Global Income queue (Bundles) and distributing 1% payouts
+ * to the previous 100 members in the same bundle.
  * 
  * @param {string} memberId - The ID of the member who just bought the package.
  * @param {number} packageAmount - The amount of the package purchased.
@@ -14,8 +14,25 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
     const amount = Number(packageAmount);
     if (isNaN(amount) || amount <= 0) return;
 
-    // Get the current highest queue index for this specific package amount
-    const lastQueueEntry = await GlobalIncomeQueue.findOne({ package_amount: amount })
+    // Determine bundle based on exact values or ranges.
+    // Bundle 1: 10000, 25000
+    // Bundle 2: 50000, 100000
+    // Bundle 3: 200000, 500000
+    let bundleName = null;
+    if (amount === 10000 || amount === 25000) {
+      bundleName = "Bundle_1";
+    } else if (amount === 50000 || amount === 100000) {
+      bundleName = "Bundle_2";
+    } else if (amount === 200000 || amount === 500000) {
+      bundleName = "Bundle_3";
+    } else {
+      // If it doesn't fit in bundles, skip Global Income.
+      console.log(`[GlobalIncome] Package amount ₹${amount} does not belong to a bundle. Skipping Global Income.`);
+      return;
+    }
+
+    // Get the current highest queue index for this bundle
+    const lastQueueEntry = await GlobalIncomeQueue.findOne({ bundle_name: bundleName })
       .sort({ queue_index: -1 })
       .exec();
 
@@ -28,81 +45,73 @@ const distributeGlobalIncome = async (memberId, packageAmount) => {
     const newEntry = new GlobalIncomeQueue({
       member_id: memberId,
       package_amount: amount,
+      bundle_name: bundleName,
       queue_index: newQueueIndex
     });
     await newEntry.save();
 
-    console.log(`[GlobalIncome] Member ${memberId} added to queue for ₹${amount} at index ${newQueueIndex}`);
+    console.log(`[GlobalIncome] Member ${memberId} added to queue for ₹${amount} in ${bundleName} at index ${newQueueIndex}`);
 
-    // Intervals: 125th, 150th, 175th, 200th, 225th, 250th, 275th relative purchase.
-    // That means the difference between current index and beneficiary index is interval - 1.
-    const payoutIntervals = [
-      { diff: 124, payoutNum: 1 },
-      { diff: 149, payoutNum: 2 },
-      { diff: 174, payoutNum: 3 },
-      { diff: 199, payoutNum: 4 },
-      { diff: 224, payoutNum: 5 },
-      { diff: 249, payoutNum: 6 },
-      { diff: 274, payoutNum: 7 }
-    ];
+    // Distribute 1% to the 100 immediately preceding users in the SAME bundle.
+    // This loops from newQueueIndex - 1 down to newQueueIndex - 100.
+    const startTarget = Math.max(1, newQueueIndex - 100);
+    const endTarget = newQueueIndex - 1;
 
-    const totalPayoutAmount = amount * 0.50; // 50% of the package amount
-    const ewCredit = Number((totalPayoutAmount / 2).toFixed(2));
-    const uwCredit = Number((totalPayoutAmount - ewCredit).toFixed(2));
+    if (endTarget < 1) return; // No previous members in the queue yet.
 
-    for (const interval of payoutIntervals) {
-      const targetQueueIndex = newQueueIndex - interval.diff;
+    const beneficiaries = await GlobalIncomeQueue.find({
+      bundle_name: bundleName,
+      queue_index: { $gte: startTarget, $lte: endTarget },
+      member_id: { $ne: memberId } // Exclude the purchaser from earning from their own purchase
+    });
 
-      // If the target index is valid (>= 1), we find the beneficiary
-      if (targetQueueIndex >= 1) {
-        const beneficiaryEntry = await GlobalIncomeQueue.findOne({
-          package_amount: amount,
-          queue_index: targetQueueIndex
+    for (const beneficiaryEntry of beneficiaries) {
+      if (beneficiaryEntry && beneficiaryEntry.member_id) {
+        const beneficiaryId = beneficiaryEntry.member_id;
+        
+        // Payout is exactly 1% of the BENEFICIARY's own package amount.
+        const payoutAmount = Number((beneficiaryEntry.package_amount * 0.01).toFixed(2));
+
+        // Add 100% of the payout balance strictly to their FD wallet
+        await MemberModel.findOneAndUpdate(
+          { Member_id: beneficiaryId },
+          { 
+            $inc: {
+              fixed_deposit_wallet: payoutAmount,
+              global_income: payoutAmount // Track total global income
+            } 
+          }
+        );
+
+        // Generate a fast random txId to prevent DB bottlenecks
+        const txId = "GI" + Date.now().toString() + Math.floor(1000 + Math.random() * 9000).toString();
+
+        // Record the transaction allocating entirely to fd_credit
+        const transaction = new TransactionModel({
+          transaction_id: txId,
+          transaction_date: new Date(),
+          member_id: beneficiaryId,
+          description: `Global Income (₹${beneficiaryEntry.package_amount}) from ${memberId}'s ${bundleName} purchase`,
+          transaction_type: "Global Income",
+          fd_credit: payoutAmount.toString(),
+          ew_credit: "0",
+          ew_debit: "0",
+          uw_credit: "0",
+          uw_debit: "0",
+          status: "Completed",
+          net_amount: payoutAmount,
+          gross_amount: payoutAmount
         });
 
-        if (beneficiaryEntry && beneficiaryEntry.member_id) {
-          const beneficiaryId = beneficiaryEntry.member_id;
+        await transaction.save();
 
-          // Add balance to beneficiary's earnings wallet and upgrade wallet
-          await MemberModel.findOneAndUpdate(
-            { Member_id: beneficiaryId },
-            { 
-              $inc: {
-  wallet_balance: ewCredit,
-    upgrade_wallet_balance: uwCredit,
-      global_income: totalPayoutAmount
-} 
-            }
-          );
-
-// Generate a fast random txId to prevent DB bottlenecks
-const txId = "GI" + Date.now().toString() + Math.floor(1000 + Math.random() * 9000).toString();
-
-// Record the transaction
-const transaction = new TransactionModel({
-  transaction_id: txId,
-  transaction_date: new Date(),
-  member_id: beneficiaryId,
-  description: `Global Income (₹${amount}) from ${memberId} (Payout ${interval.payoutNum}/7)`,
-  transaction_type: "Global Income",
-  ew_credit: ewCredit,
-  ew_debit: 0,
-  uw_credit: uwCredit,
-  uw_debit: 0,
-  status: "Completed",
-  net_amount: totalPayoutAmount,
-  gross_amount: totalPayoutAmount
-});
-
-await transaction.save();
-
-console.log(`[GlobalIncome] Paid ₹${totalPayoutAmount} to ${beneficiaryId} for ₹${amount} package (Payout ${interval.payoutNum}/7)`);
-        }
+        console.log(`[GlobalIncome] Paid ₹${payoutAmount} to ${beneficiaryId} for their ₹${beneficiaryEntry.package_amount} package`);
       }
     }
+
   } catch (error) {
-  console.error(`[GlobalIncome Error] Failed to distribute global income for ${memberId}:`, error);
-}
+    console.error("❌ Error in distributeGlobalIncome:", error);
+  }
 };
 
 module.exports = { distributeGlobalIncome };

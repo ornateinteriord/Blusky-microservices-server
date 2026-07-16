@@ -5,7 +5,7 @@ const CommissionModel = require("../../../models/commission.model");
 
 const referralCommissionPercentages = {
   1: 20,
-  2: 5,
+  2: 3,
   3: 1,
   4: 0.5,
   5: 0.5,
@@ -297,9 +297,25 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
     // Use a unique compound ID to ensure consistency and speed in high-concurrency 
     const newTransactionId = `T-L-${payout_id}-${Math.floor(Math.random() * 1000)}`;
 
-    // Split the commission 50/50 between Earnings Wallet and Upgrade Wallet
-    const earningsAmount = Number((amount / 2).toFixed(2));
-    const upgradeAmount = Number((amount - earningsAmount).toFixed(2));
+    // Split the commission into 4 distinct wallets based on level
+    let fdAmount = 0;
+    let withdrawalAmount = 0;
+    let purchaseAmount = 0;
+    let upgradeAmount = 0;
+
+    if (level <= 3) {
+      // Level 1, 2, 3
+      fdAmount = Number((amount * 0.20).toFixed(2));
+      withdrawalAmount = Number((amount * 0.50).toFixed(2));
+      purchaseAmount = Number((amount * 0.10).toFixed(2));
+      upgradeAmount = Number((amount * 0.20).toFixed(2));
+    } else {
+      // Level 4 to 10
+      fdAmount = Number((amount * 0.50).toFixed(2));
+      withdrawalAmount = Number((amount * 0.20).toFixed(2));
+      purchaseAmount = Number((amount * 0.10).toFixed(2));
+      upgradeAmount = Number((amount * 0.20).toFixed(2));
+    }
 
     const transaction = new TransactionModel({
       transaction_id: newTransactionId,
@@ -310,8 +326,10 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
       reference_no: payout_id.toString(),
       description: payout_type,
       transaction_type: payout_type.includes('Referral Bonus') ? "Referral Bonus" : "Level Bonus",
-      ew_credit: earningsAmount.toString(),
+      ew_credit: withdrawalAmount.toString(),
       uw_credit: upgradeAmount.toString(),
+      fd_credit: fdAmount.toString(),
+      pw_credit: purchaseAmount.toString(),
       ew_debit: "0",
       status: "Completed",
       level: level,
@@ -328,11 +346,13 @@ const createLevelBenefitsTransaction = async (transactionData, session = null) =
       { Member_id: memberId },
       { 
         $inc: {
-  wallet_balance: earningsAmount,
-    upgrade_wallet: upgradeAmount
-} 
+          wallet_balance: withdrawalAmount,
+          upgrade_wallet: upgradeAmount,
+          fixed_deposit_wallet: fdAmount,
+          purchase_wallet: purchaseAmount
+        } 
       },
-{ session }
+      { session }
     );
 
 return transaction;

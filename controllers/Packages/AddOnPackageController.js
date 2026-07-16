@@ -414,32 +414,38 @@ const buyPackageDirectly = async (req, res) => {
       await newAddOn.save();
     }
 
-    try {
-      const { distributeGlobalIncome } = require("./globalIncomeService");
-      await distributeGlobalIncome(finalTargetId, requested_amount);
-    } catch (globalIncomeErr) {
-      console.error("Global income distribution failed:", globalIncomeErr);
+    // try {
+    //   const { distributeGlobalIncome } = require("./globalIncomeService");
+    //   await distributeGlobalIncome(finalTargetId, requested_amount);
+    // } catch (globalIncomeErr) {
+    //   console.error("Global income distribution failed:", globalIncomeErr);
+    // }
+
+    // --- NEW: Single Leg Income (1% cashback to the user themselves + up to 100 previous buyers of the same package) ---
+    // Calculate bundle amounts based on the requested amount
+    let bundleAmounts = [];
+    if (requested_amount === 10000 || requested_amount === 25000) {
+      bundleAmounts = [10000, 25000, '10000', '25000'];
+    } else if (requested_amount === 50000 || requested_amount === 100000) {
+      bundleAmounts = [50000, 100000, '50000', '100000'];
+    } else if (requested_amount === 200000 || requested_amount === 500000) {
+      bundleAmounts = [200000, 500000, '200000', '500000'];
     }
-    // --- NEW: Single Leg Income (1.5% cashback to the user themselves + up to 100 previous buyers of the same package) ---
-    const singleLineIncomeAmount = Number((requested_amount * 0.015).toFixed(2));
 
-    if (singleLineIncomeAmount > 0) {
-      // Split 50/50 between Earnings Wallet and Upgrade Wallet
-      const earningsAmount = Number((singleLineIncomeAmount / 2).toFixed(2));
-      const upgradeAmount = Number((singleLineIncomeAmount - earningsAmount).toFixed(2));
-
-      // 2. Give Single Leg Income to up to 100 previous buyers of the exact same package
+    /*
+    // TODO: Temporarily disabled per user request
+    if (bundleAmounts.length > 0) {
       try {
-        // Find previous buyers of this exact package amount (handle both string and number types)
         const primaryBuyers = await MemberModel.find({
-          package_value: { $in: [requested_amount, requested_amount.toString()] },
+
+          package_value: { $in: bundleAmounts },
           Member_id: { $ne: finalTargetId }
-        }).select('Member_id Name mobileno createdAt').lean();
+        }).select('Member_id Name mobileno createdAt package_value').lean();
 
         const addonBuyers = await AddOnPackageModel.find({
-          amount: { $in: [requested_amount, requested_amount.toString()] },
+          amount: { $in: bundleAmounts },
           member_id: { $ne: finalTargetId }
-        }).select('member_id createdAt').lean();
+        }).select('member_id amount createdAt').lean();
 
         console.log(`=== SINGLE LEG INCOME DISTRIBUTION START ===`);
         console.log(`Buyer: ${finalTargetId}, Package Amount: ₹${requested_amount}`);
@@ -450,9 +456,8 @@ const buyPackageDirectly = async (req, res) => {
 
         for (const buyer of primaryBuyers) {
           const buyerTime = new Date(buyer.createdAt).getTime();
-          // Only include upliners (registered BEFORE this user, or same time but lower Member ID)
           if ((buyerTime < targetMemberTime || (buyerTime === targetMemberTime && buyer.Member_id < targetMemberId)) && !eligibleMap.has(buyer.Member_id)) {
-            eligibleMap.set(buyer.Member_id, { id: buyer.Member_id, name: buyer.Name, phone: buyer.mobileno, time: buyerTime });
+            eligibleMap.set(buyer.Member_id, { id: buyer.Member_id, name: buyer.Name, phone: buyer.mobileno, time: buyerTime, package_amount: Number(buyer.package_value) });
           }
         }
 
@@ -461,9 +466,8 @@ const buyPackageDirectly = async (req, res) => {
             const m = await MemberModel.findOne({ Member_id: addon.member_id }).select('Member_id Name mobileno createdAt').lean();
             if (m) {
               const mTime = new Date(m.createdAt).getTime();
-              // Only include upliners (registered BEFORE this user, or same time but lower Member ID)
               if (mTime < targetMemberTime || (mTime === targetMemberTime && m.Member_id < targetMemberId)) {
-                eligibleMap.set(addon.member_id, { id: m.Member_id, name: m.Name, phone: m.mobileno, time: mTime });
+                eligibleMap.set(addon.member_id, { id: m.Member_id, name: m.Name, phone: m.mobileno, time: mTime, package_amount: Number(addon.amount) });
               }
             }
           }
@@ -476,38 +480,47 @@ const buyPackageDirectly = async (req, res) => {
 
         console.log(`Total Eligible Upline Users Found: ${finalEligibleMembers.length}`);
         console.log(`Eligible Users List:`, finalEligibleMembers.map(m => m.id));
-        console.log(`Each user will receive: ₹${singleLineIncomeAmount}`);
         console.log(`============================================`);
 
         for (const member of finalEligibleMembers) {
-          const sliTransaction = new TransactionModel({
-            transaction_id: `SLI${Date.now()}${Math.floor(Math.random() * 1000)}`,
-            transaction_date: new Date().toISOString(),
-            member_id: member.id,
-            Name: member.name,
-            mobileno: member.phone,
-            description: `Single Leg Income (₹${requested_amount}) from ${finalTargetId}`,
-            transaction_type: "Single Leg Income",
-            ew_credit: earningsAmount.toString(),
-            uw_credit: upgradeAmount.toString(),
-            ew_debit: "0",
-            status: "Completed",
-            net_amount: singleLineIncomeAmount,
-            gross_amount: singleLineIncomeAmount
-          });
+          // Each upliner gets 1% of THEIR OWN package amount, all to FD Wallet
+          const memberSingleLegIncome = Number((member.package_amount * 0.01).toFixed(2));
+          if (memberSingleLegIncome > 0) {
+            const fdAmount = memberSingleLegIncome;
+            
+            const sliTransaction = new TransactionModel({
+              transaction_id: `SLI${Date.now()}${Math.floor(Math.random() * 1000)}`,
+              transaction_date: new Date().toISOString(),
+              member_id: member.id,
+              Name: member.name,
+              mobileno: member.phone,
+              description: `Single Leg Income (₹${member.package_amount}) from ${finalTargetId}'s bundle purchase`,
+              transaction_type: "Single Leg Income",
+              fd_credit: fdAmount.toString(),
+              ew_credit: "0",
+              uw_credit: "0",
+              ew_debit: "0",
+              status: "Completed",
+              net_amount: memberSingleLegIncome,
+              gross_amount: memberSingleLegIncome
+            });
 
-          await sliTransaction.save();
+            await sliTransaction.save();
 
-          await MemberModel.findOneAndUpdate(
-            { Member_id: member.id },
-            { $inc: { wallet_balance: earningsAmount, upgrade_wallet: upgradeAmount } }
-          );
+            await MemberModel.findOneAndUpdate(
+              { Member_id: member.id },
+              { $inc: { fixed_deposit_wallet: fdAmount } }
+            );
+          }
         }
       } catch (err) {
         console.error("Error distributing single leg income to previous buyers:", err);
       }
     }
+    */
     // ----------------------------------------------------------------------
+
+
 
     // 4. MLM Commissions - For Target Member's Sponsor
     try {

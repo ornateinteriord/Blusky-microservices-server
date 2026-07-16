@@ -186,6 +186,10 @@ const getWalletOverview = async (req, res) => {
         upgradeWalletBalance: (member.upgrade_wallet || 0).toFixed(2),
         // Top Up Wallet (completely separate)
         topUpBalance: topUpBalance.toFixed(2),
+        // Purchase Wallet
+        purchaseBalance: (member.purchase_wallet || 0).toFixed(2),
+        // Fixed Deposit Wallet
+        fixedDepositBalance: (member.fixed_deposit_wallet || 0).toFixed(2),
         topUpTransactions: topUpTransactions.sort((a, b) => new Date(b.transaction_date) - new Date(a.transaction_date)),
         // Loan information (for transparency)
         loanInfo: {

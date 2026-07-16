@@ -83,6 +83,8 @@ const MemberSchema = new mongoose.Schema(
     wallet_balance: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
     upgrade_wallet: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
     top_up_wallet: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
+    fixed_deposit_wallet: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
+    purchase_wallet: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
     global_income: { type: Number, default: 0, set: v => Math.round(v * 10000) / 10000 },
     qr_code: { type: String, unique: true, sparse: true },
 
